@@ -409,3 +409,143 @@ class LLMActionGenerator:
         
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(export_data, f, indent=2, ensure_ascii=False)
+
+    def generate_proposal_sync(self, role: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """同步生成议会提案"""
+        try:
+            # 构建提案生成提示
+            prompt = self._build_proposal_prompt(role, context)
+            
+            # 生成提案
+            if self.config.use_async:
+                try:
+                    response = asyncio.run(self.provider.generate_text(prompt, context))
+                except:
+                    response = self.mock_provider.generate_text_sync(prompt, context)
+            else:
+                response = self.mock_provider.generate_text_sync(prompt, context)
+            
+            # 解析提案响应
+            proposal = self._parse_proposal_response(response, role)
+            
+            # 更新统计
+            self.generation_stats['total_generations'] += 1
+            self.generation_stats['successful_generations'] += 1
+            
+            return proposal
+            
+        except Exception as e:
+            self.generation_stats['total_generations'] += 1
+            self.generation_stats['error_count'] += 1
+            
+            # 返回默认提案
+            return self._get_default_proposal(role)
+    
+    def _build_proposal_prompt(self, role: str, context: Dict[str, Any]) -> str:
+        """构建提案生成提示"""
+        system_state = context.get('system_state', {})
+        current_step = context.get('current_step', 0)
+        agent_performance = context.get('agent_performance', 0.5)
+        parliament_history = context.get('parliament_history', [])
+        
+        # 基础提示
+        prompt = f"""作为{role}角色，你需要为医院治理议会提出一项具体的提案。
+
+当前系统状态：
+- 医疗质量指标: {system_state.get('medical_quality', 'N/A')}
+- 患者满意度: {system_state.get('patient_satisfaction', 'N/A')}
+- 运营效率: {system_state.get('operational_efficiency', 'N/A')}
+- 当前步骤: {current_step}
+- 角色表现: {agent_performance}
+
+请基于你的角色职责和当前状况，提出一个具体的改进提案。"""
+
+        # 添加历史上下文
+        if parliament_history:
+            prompt += f"\n\n最近的议会决议历史:\n"
+            for i, meeting in enumerate(parliament_history[-3:]):
+                proposals = meeting.get('proposals', {})
+                prompt += f"第{i+1}次会议提案数: {len(proposals)}\n"
+        
+        # 角色特定的提案指导
+        role_guidance = {
+            'doctors': '请专注于医疗质量、患者安全和医疗服务改进',
+            'interns': '请专注于培训质量、学习资源和职业发展',
+            'patients': '请专注于患者体验、等待时间和医疗费用',
+            'accountants': '请专注于成本控制、财务透明度和预算优化',
+            'government': '请专注于监管合规、公共利益和医疗公平'
+        }
+        
+        guidance = role_guidance.get(role, '请提出有助于整体医院治理的建议')
+        prompt += f"\n\n{guidance}"
+        
+        prompt += """
+
+请按以下格式返回你的提案：
+{
+  "proposal": "具体的提案内容",
+  "priority": 0.8,
+  "benefit": 0.7,
+  "cost": 0.3,
+  "reasoning": "提案的理由说明"
+}
+
+其中priority、benefit、cost都是0-1之间的数值。"""
+        
+        return prompt
+    
+    def _parse_proposal_response(self, response: str, role: str) -> Dict[str, Any]:
+        """解析提案响应"""
+        try:
+            import json
+            import re
+            
+            # 尝试提取JSON
+            json_match = re.search(r'\{[^}]*\}', response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                proposal_data = json.loads(json_str)
+                
+                return {
+                    'agent_id': role,
+                    'proposal_text': proposal_data.get('proposal', '维持现状'),
+                    'priority': float(proposal_data.get('priority', 0.5)),
+                    'expected_benefit': float(proposal_data.get('benefit', 0.5)),
+                    'implementation_cost': float(proposal_data.get('cost', 0.3)),
+                    'reasoning': proposal_data.get('reasoning', 'LLM生成提案'),
+                    'generation_method': 'LLM'
+                }
+            else:
+                # 如果无法解析JSON，尝试提取文本
+                return {
+                    'agent_id': role,
+                    'proposal_text': response[:200] + "..." if len(response) > 200 else response,
+                    'priority': 0.5,
+                    'expected_benefit': 0.5,
+                    'implementation_cost': 0.3,
+                    'reasoning': '基于LLM文本生成',
+                    'generation_method': 'LLM_fallback'
+                }
+                
+        except Exception as e:
+            return self._get_default_proposal(role)
+    
+    def _get_default_proposal(self, role: str) -> Dict[str, Any]:
+        """获取默认提案"""
+        default_proposals = {
+            'doctors': '提高医疗服务质量标准',
+            'interns': '加强实习生培训计划',
+            'patients': '改善患者就诊体验',
+            'accountants': '优化医院财务管理',
+            'government': '加强医疗监管措施'
+        }
+        
+        return {
+            'agent_id': role,
+            'proposal_text': default_proposals.get(role, '维持现状'),
+            'priority': 0.5,
+            'expected_benefit': 0.5,
+            'implementation_cost': 0.3,
+            'reasoning': '默认模板提案',
+            'generation_method': 'template'
+        }

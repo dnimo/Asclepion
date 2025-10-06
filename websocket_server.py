@@ -29,9 +29,10 @@ logger = logging.getLogger(__name__)
 # 检查核心算法模块
 try:
     from src.hospital_governance.simulation.simulator import KallipolisSimulator, SimulationConfig
-    from src.hospital_governance.simulation.scenario_runner import ScenarioRunner
+    # 移除ScenarioRunner导入，直接使用Simulator内置功能
     HAS_CORE_ALGORITHMS = True
     logger.info("✅ 医院治理系统核心模块导入成功")
+    logger.info("🎯 支持: MADDPG + LLM + 分布式控制 + 数学策略 + 模板")
 except ImportError as e:
     logger.warning(f"⚠️ 核心算法模块导入失败: {e}")
     logger.info("🔄 将使用模拟数据运行")
@@ -58,9 +59,9 @@ class HospitalSimulationServer:
         self.current_step = 0
         self.start_time = None
         
-        # 仿真器和场景运行器
+        # 仿真器（集成完整的多层决策架构）
         self.simulator = None
-        self.scenario_runner = None
+        self.simulation_task = None  # 异步仿真任务
         
         # 16维系统状态指标（统一定义）
         self.performance_metrics = {
@@ -195,13 +196,6 @@ class HospitalSimulationServer:
             action = 'paused' if self.simulation_paused else 'resumed'
             logger.info(f"⏸️ 仿真已{action}")
             
-            # 通知仿真器暂停/继续
-            if self.simulator:
-                if self.simulation_paused:
-                    self.simulator.pause()
-                else:
-                    self.simulator.resume()
-            
             await self.broadcast({
                 'type': 'simulation_control',
                 'action': action,
@@ -215,10 +209,17 @@ class HospitalSimulationServer:
         self.current_step = 0
         self.start_time = None
         
-        # 通知仿真器停止并重置
-        if self.simulator:
-            self.simulator.stop()
-            self.simulator.reset()
+        # 停止异步仿真任务
+        if self.simulation_task and not self.simulation_task.done():
+            self.simulation_task.cancel()
+            try:
+                await self.simulation_task
+            except asyncio.CancelledError:
+                logger.info("🛑 仿真任务已取消")
+        
+        # 重置仿真器
+        self.simulator = None
+        self.simulation_task = None
         
         # 重置性能指标
         self.performance_metrics.update({
@@ -262,6 +263,10 @@ class HospitalSimulationServer:
     async def send_system_status(self, websocket):
         """发送详细系统状态"""
         try:
+            agent_count = 5  # 默认5个智能体
+            if hasattr(self, 'simulator') and self.simulator and hasattr(self.simulator, 'agents'):
+                agent_count = len(self.simulator.agents)
+            
             system_status = {
                 'type': 'system_status',
                 'simulation': {
@@ -270,6 +275,7 @@ class HospitalSimulationServer:
                     'step': self.current_step,
                     'start_time': self.start_time.isoformat() if self.start_time else None
                 },
+                'agents_count': agent_count,
                 'performance_metrics': self.performance_metrics,
                 'integration_status': 'production' if HAS_CORE_ALGORITHMS else 'simulation',
                 'architecture': 'Separated WebSocket Server + KallipolisSimulator',
@@ -277,8 +283,42 @@ class HospitalSimulationServer:
             }
             
             await self.send_to_client(websocket, system_status)
+            
+            # 发送初始规则数据
+            await self._send_initial_rules(websocket)
+            
+            # 发送初始智能体状态
+            await self._send_initial_agent_states(websocket)
         except Exception as e:
             logger.error(f"❌ 发送系统状态失败: {e}")
+    
+    async def _send_initial_agent_states(self, websocket):
+        """发送初始智能体状态"""
+        try:
+            logger.info("🤖 开始发送初始智能体状态...")
+            agent_configs = {
+                'doctors': {'name': '医生群体', 'type': 'doctor'},
+                'interns': {'name': '实习生群体', 'type': 'intern'},
+                'patients': {'name': '患者代表', 'type': 'patient'},
+                'accountants': {'name': '会计群体', 'type': 'accountant'},
+                'government': {'name': '政府监管', 'type': 'government'}
+            }
+            
+            for agent_id, config in agent_configs.items():
+                await self.send_to_client(websocket, {
+                    'type': 'agent_action',
+                    'agent_id': agent_id,
+                    'action': '系统初始化',
+                    'reasoning': f'{config["name"]}已就绪，等待仿真开始',
+                    'decision_layer': '基础模板',
+                    'confidence': 1.0,
+                    'agent_type': config['type'],
+                    'timestamp': datetime.now().isoformat()
+                })
+                logger.info(f"✅ 发送智能体状态: {agent_id} - {config['name']}")
+                
+        except Exception as e:
+            logger.error(f"❌ 发送初始智能体状态失败: {e}")
     
     async def simulation_loop(self):
         """启动仿真循环 - WebSocket服务器作为数据推送接口"""
@@ -298,32 +338,27 @@ class HospitalSimulationServer:
     async def _start_real_simulation(self):
         """启动真实仿真循环"""
         logger.info("🔄 启动真实仿真循环...")
+        logger.info("🏗️ 多层决策架构: MADDPG → LLM → 控制器 → 数学策略 → 模板")
         
         # 创建仿真器实例
         config = SimulationConfig(
-            max_steps=1000,
+            max_steps=14,
             enable_learning=True,
+            enable_llm_integration=True,
             enable_holy_code=True,
-            enable_crises=True
+            enable_crises=True,
+            enable_behavior_models=True,
+            meeting_interval=7  # 议会每7步召开一次
         )
         self.simulator = KallipolisSimulator(config)
         
-        # 设置数据推送回调
-        self.simulator.set_data_callback(self.on_simulation_data)
+        logger.info(f"✅ Simulator初始化完成 - 智能体数量: {len(self.simulator.agent_objects)}")
         
-        # 创建场景运行器
-        self.scenario_runner = ScenarioRunner(self.simulator)
-        try:
-            self.scenario_runner.load_scenarios_from_yaml('config/simulation_scenarios.yaml')
-        except Exception as e:
-            logger.warning(f"⚠️ 场景文件加载失败: {e}")
+        # 初始化完成后推送真实的神圣法典规则
+        await self._push_real_holy_code_rules()
         
         # 启动仿真循环（异步运行）
-        await self.simulator.run_async(
-            steps=1000, 
-            scenario_runner=self.scenario_runner,
-            training=False
-        )
+        self.simulation_task = asyncio.create_task(self._run_simulation_steps())
     
     async def _start_mock_simulation(self):
         """启动模拟仿真循环（回退模式）"""
@@ -415,8 +450,131 @@ class HospitalSimulationServer:
                     'timestamp': datetime.now().isoformat()
                 })
     
+    async def _send_initial_rules(self, websocket):
+        """发送初始规则数据到客户端"""
+        try:
+            # 尝试从simulator获取规则数据
+            if hasattr(self, 'simulator') and self.simulator and self.simulator.holy_code_manager:
+                rules = self.simulator.holy_code_manager.rules
+                active_rules = []
+                all_rules = []
+                
+                for rule_id, rule_data in rules.items():
+                    rule_info = {
+                        'id': rule_id,
+                        'name': rule_data.get('name', rule_id),
+                        'description': rule_data.get('description', ''),
+                        'priority': rule_data.get('priority', 1),
+                        'context': rule_data.get('context', 'general'),
+                        'active': rule_data.get('active', True)
+                    }
+                    all_rules.append(rule_info)
+                    if rule_info['active']:
+                        active_rules.append(rule_info)
+                
+                await self.send_to_client(websocket, {
+                    'type': 'holy_code_rules',
+                    'active_rules': active_rules,
+                    'all_rules': all_rules,
+                    'voting_results': [],
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                # 发送模拟规则数据
+                await self.send_to_client(websocket, {
+                    'type': 'holy_code_rules', 
+                    'active_rules': list(self.basic_rules.values())[:3],
+                    'all_rules': list(self.basic_rules.values()),
+                    'voting_results': [],
+                    'timestamp': datetime.now().isoformat()
+                })
+        except Exception as e:
+            logger.error(f"❌ 发送初始规则数据失败: {e}")
+    
+    async def _push_real_holy_code_rules(self):
+        """推送真实的神圣法典规则"""
+        try:
+            if hasattr(self.simulator, 'holy_code_manager') and self.simulator.holy_code_manager:
+                # HolyCodeManager的规则存储在rule_engine中
+                if hasattr(self.simulator.holy_code_manager, 'rule_engine') and \
+                   hasattr(self.simulator.holy_code_manager.rule_engine, 'rules'):
+                    rules_dict = self.simulator.holy_code_manager.rule_engine.rules
+                    
+                    active_rules = []
+                    all_rules = []
+                    
+                    for rule_id, rule_obj in rules_dict.items():
+                        rule_info = {
+                            'id': str(rule_obj.rule_id) if hasattr(rule_obj, 'rule_id') else str(rule_id),
+                            'name': str(rule_obj.name) if hasattr(rule_obj, 'name') else str(rule_id),
+                            'description': str(rule_obj.description) if hasattr(rule_obj, 'description') else '',
+                            'priority': int(rule_obj.priority.value) if hasattr(rule_obj, 'priority') and hasattr(rule_obj.priority, 'value') else 3,
+                            'context': rule_obj.context if hasattr(rule_obj, 'context') else ['general'],
+                            'active': True,
+                            'weight': float(rule_obj.weight) if hasattr(rule_obj, 'weight') else 1.0
+                        }
+                        all_rules.append(rule_info)
+                        active_rules.append(rule_info)
+                    
+                    if all_rules:  # 只在有规则时推送
+                        await self.broadcast({
+                            'type': 'holy_code_rules',
+                            'active_rules': active_rules,
+                            'all_rules': all_rules,
+                            'voting_results': [],
+                            'timestamp': datetime.now().isoformat()
+                        })
+                        logger.info(f"✅ 推送了 {len(all_rules)} 条真实神圣法典规则")
+                        return True
+                    else:
+                        logger.warning("⚠️ 规则字典为空")
+                else:
+                    logger.warning("⚠️ 未找到rule_engine.rules")
+            else:
+                logger.warning("⚠️ HolyCodeManager未初始化")
+        except Exception as e:
+            logger.error(f"❌ 推送真实规则失败: {e}")
+        return False
+
+    async def _run_simulation_steps(self):
+        """执行仿真步骤循环"""
+        try:
+            step = 0
+            while self.simulation_running and step < 14:
+                if not self.simulation_paused:
+                    # 执行单步仿真
+                    step_result = self.simulator.step()
+                    
+                    # 处理仿真数据
+                    await self.on_simulation_data(step_result)
+                    
+                    step += 1
+                    
+                    # 检查是否仿真完成
+                    if step >= 14:
+                        logger.info("🏁 仿真完成")
+                        self.simulation_running = False
+                        await self.broadcast({
+                            'type': 'simulation_control',
+                            'action': 'completed',
+                            'timestamp': datetime.now().isoformat()
+                        })
+                        break
+                
+                # 等待间隔
+                await asyncio.sleep(2)  # 每2秒执行一步
+                
+        except Exception as e:
+            logger.error(f"❌ 仿真执行失败: {e}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
+            
+            # 回退到模拟模式
+            logger.info("🔄 回退到模拟仿真模式")
+            await self._start_mock_simulation()
+    
     async def on_simulation_data(self, step_data: Dict[str, Any]):
-        """处理来自仿真器的数据推送"""
+        """处理来自仿真器的数据推送（多层决策架构）"""
         try:
             # 更新服务器状态
             self.current_step = step_data.get('step', self.current_step)
@@ -429,51 +587,88 @@ class HospitalSimulationServer:
                 'timestamp': datetime.now().isoformat()
             })
             
-            # 推送系统状态
+            # 推送系统状态（16维）
             if 'system_state' in step_data:
-                # 将系统状态映射到16维性能指标
                 system_state = step_data['system_state']
                 if isinstance(system_state, dict):
-                    # 更新性能指标
-                    mapping = {
-                        'bed_utilization': system_state.get('resource_utilization', 0.7),
-                        'equipment_utilization': system_state.get('resource_adequacy', 0.8),
-                        'staff_utilization': system_state.get('workload', 0.6),
-                        'patient_satisfaction': system_state.get('patient_satisfaction', 0.85),
-                        'treatment_success': system_state.get('medical_quality', 0.9),
-                        'safety_index': system_state.get('patient_safety', 0.95),
+                    # 直接映射完整的系统状态
+                    state_mapping = {
+                        'medical_quality': system_state.get('medical_quality', 0.9),
+                        'patient_safety': system_state.get('patient_safety', 0.95),
+                        'care_quality': system_state.get('care_quality', 0.9),
+                        'resource_adequacy': system_state.get('resource_adequacy', 0.7),
+                        'resource_utilization': system_state.get('resource_utilization', 0.7),
+                        'resource_access': system_state.get('resource_access', 0.8),
+                        'education_quality': system_state.get('education_quality', 0.75),
+                        'training_hours': system_state.get('training_hours', 37.5),
+                        'mentorship_availability': system_state.get('mentorship_availability', 0.8),
+                        'career_development': system_state.get('career_development', 0.6),
+                        'financial_health': system_state.get('financial_health', 0.65),
                         'cost_efficiency': system_state.get('cost_efficiency', 0.75),
-                        'financial_health': system_state.get('financial_health', 0.8)
+                        'revenue_growth': system_state.get('revenue_growth', 0.65),
+                        'patient_satisfaction': system_state.get('patient_satisfaction', 0.85),
+                        'accessibility': system_state.get('accessibility', 0.8),
+                        'waiting_times': system_state.get('waiting_times', 0.3)
                     }
                     
-                    for metric, value in mapping.items():
-                        if metric in self.performance_metrics:
+                    # 更新性能指标
+                    for metric, value in state_mapping.items():
+                        if metric in ['training_hours']:
+                            # 特殊处理训练时间
+                            self.performance_metrics[metric] = min(float(value) / 60, 1.0)
+                        else:
                             self.performance_metrics[metric] = float(value)
                 
                 await self.broadcast({
                     'type': 'system_state',
-                    'state': self.performance_metrics,
+                    'state': state_mapping,
                     'timestamp': datetime.now().isoformat()
                 })
             
-            # 推送智能体行动
+            # 推送智能体行动（支持多层决策）
             if 'actions' in step_data:
                 for agent_id, action_data in step_data['actions'].items():
+                    # 检测决策层级
+                    reasoning = action_data.get('reasoning', '')
+                    decision_layer = 'Unknown'
+                    if 'MADDPG' in reasoning:
+                        decision_layer = 'MADDPG深度强化学习'
+                    elif 'LLM' in reasoning:
+                        decision_layer = 'LLM智能生成'
+                    elif '控制' in reasoning:
+                        decision_layer = '分布式控制器'
+                    elif '数学' in reasoning:
+                        decision_layer = '数学策略模板'
+                    else:
+                        decision_layer = '基础模板'
+                    
                     await self.broadcast({
                         'type': 'agent_action',
                         'agent_id': agent_id,
                         'action': action_data.get('action', 'Unknown action'),
-                        'reasoning': action_data.get('reasoning', f"{agent_id} 基于当前状态执行决策"),
+                        'reasoning': reasoning,
+                        'decision_layer': decision_layer,
                         'confidence': action_data.get('confidence', 0.8),
+                        'strategy_params': action_data.get('strategy_params', []),
+                        'agent_type': action_data.get('agent_type', 'Unknown'),
                         'timestamp': datetime.now().isoformat()
                     })
             
             # 推送性能指标
             if 'metrics' in step_data:
                 metrics = step_data['metrics']
+                combined_metrics = {
+                    **metrics,
+                    'overall_performance': metrics.get('overall_performance', 0.5),
+                    'system_stability': metrics.get('system_stability', 0.8),
+                    'crisis_count': metrics.get('crisis_count', 0),
+                    'parliament_meetings': metrics.get('parliament_meetings', 0),
+                    'consensus_efficiency': metrics.get('consensus_efficiency', 0.5)
+                }
+                
                 await self.broadcast({
                     'type': 'metrics',
-                    **self.performance_metrics,
+                    **combined_metrics,
                     'timestamp': datetime.now().isoformat()
                 })
             
@@ -487,9 +682,63 @@ class HospitalSimulationServer:
                         'description': crisis.get('description', '未知危机'),
                         'timestamp': datetime.now().isoformat()
                     })
+            
+            # 推送议会会议结果
+            if step_data.get('parliament_meeting', False):
+                await self.broadcast({
+                    'type': 'parliament_meeting',
+                    'parliament_result': {
+                        'consensus': {
+                            'consensus_level': step_data.get('metrics', {}).get('consensus_efficiency', 0.5),
+                            'main_decision': '议会通过医院治理优化决议'
+                        }
+                    },
+                    'timestamp': datetime.now().isoformat()
+                })
+            
+            # 推送神圣法典规则（从holy_code_manager获取）
+            if hasattr(self.simulator, 'holy_code_manager') and self.simulator.holy_code_manager:
+                try:
+                    # HolyCodeManager的规则存储在rule_engine中
+                    if hasattr(self.simulator.holy_code_manager, 'rule_engine') and \
+                       hasattr(self.simulator.holy_code_manager.rule_engine, 'rules'):
+                        rules_dict = self.simulator.holy_code_manager.rule_engine.rules
+                        
+                        active_rules = []
+                        all_rules = []
+                        
+                        for rule_id, rule_obj in rules_dict.items():
+                            rule_info = {
+                                'id': str(rule_obj.rule_id) if hasattr(rule_obj, 'rule_id') else str(rule_id),
+                                'name': str(rule_obj.name) if hasattr(rule_obj, 'name') else str(rule_id),
+                                'description': str(rule_obj.description) if hasattr(rule_obj, 'description') else '',
+                                'priority': int(rule_obj.priority.value) if hasattr(rule_obj, 'priority') and hasattr(rule_obj.priority, 'value') else 3,
+                                'context': rule_obj.context if hasattr(rule_obj, 'context') else ['general'],
+                                'active': True,
+                                'weight': float(rule_obj.weight) if hasattr(rule_obj, 'weight') else 1.0
+                            }
+                            all_rules.append(rule_info)
+                            active_rules.append(rule_info)
+                        
+                        if all_rules:  # 只在有规则时推送
+                            await self.broadcast({
+                                'type': 'holy_code_rules',
+                                'active_rules': active_rules,
+                                'all_rules': all_rules,
+                                'voting_results': [],
+                                'timestamp': datetime.now().isoformat()
+                            })
+                            logger.info(f"✅ 推送了 {len(all_rules)} 条真实神圣法典规则")
+                    else:
+                        logger.warning("⚠️ 未找到rule_engine.rules")
+                except Exception as rule_error:
+                    logger.warning(f"⚠️ 规则数据处理失败: {rule_error}")
+                    # 不影响其他数据推送
                 
         except Exception as e:
             logger.error(f"❌ 处理仿真数据推送失败: {e}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
     
     async def broadcast(self, message):
         """向所有客户端广播消息"""
@@ -502,11 +751,130 @@ class HospitalSimulationServer:
     async def send_to_client(self, websocket, message):
         """向单个客户端发送消息"""
         try:
-            await websocket.send(json.dumps(message))
+            # 处理numpy数据类型和其他不可序列化的对象
+            import json
+            
+            def convert_numpy(obj):
+                if hasattr(obj, 'tolist'):  # numpy数组
+                    return obj.tolist()
+                elif hasattr(obj, 'item'):  # numpy标量
+                    return obj.item()
+                elif isinstance(obj, np.bool_):
+                    return bool(obj)
+                elif isinstance(obj, np.integer):
+                    return int(obj)
+                elif isinstance(obj, np.floating):
+                    return float(obj)
+                elif isinstance(obj, dict):
+                    return {k: convert_numpy(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_numpy(item) for item in obj]
+                else:
+                    return obj
+            
+            cleaned_message = convert_numpy(message)
+            await websocket.send(json.dumps(cleaned_message))
         except websockets.exceptions.ConnectionClosed:
             self.clients.discard(websocket)
         except Exception as e:
             logger.error(f"❌ 发送消息失败: {e}")
+            # 尝试发送一个简化的错误消息
+            try:
+                error_msg = {
+                    'type': 'error',
+                    'message': f'数据发送失败: {str(e)}',
+                    'timestamp': datetime.now().isoformat()
+                }
+                await websocket.send(json.dumps(error_msg))
+            except:
+                pass
+    
+    async def _send_initial_rules(self, websocket):
+        """发送初始规则数据到客户端"""
+        try:
+            # 尝试从simulator获取规则数据
+            if hasattr(self, 'simulator') and self.simulator and \
+               hasattr(self.simulator, 'holy_code_manager') and self.simulator.holy_code_manager:
+                
+                # HolyCodeManager的规则存储在rule_engine中
+                if hasattr(self.simulator.holy_code_manager, 'rule_engine') and \
+                   hasattr(self.simulator.holy_code_manager.rule_engine, 'rules'):
+                    rules_dict = self.simulator.holy_code_manager.rule_engine.rules
+                    
+                    active_rules = []
+                    all_rules = []
+                    
+                    for rule_id, rule_obj in rules_dict.items():
+                        rule_info = {
+                            'id': str(rule_obj.rule_id) if hasattr(rule_obj, 'rule_id') else str(rule_id),
+                            'name': str(rule_obj.name) if hasattr(rule_obj, 'name') else str(rule_id),
+                            'description': str(rule_obj.description) if hasattr(rule_obj, 'description') else '',
+                            'priority': int(rule_obj.priority.value) if hasattr(rule_obj, 'priority') and hasattr(rule_obj.priority, 'value') else 3,
+                            'context': rule_obj.context if hasattr(rule_obj, 'context') else ['general'],
+                            'active': True,
+                            'weight': float(rule_obj.weight) if hasattr(rule_obj, 'weight') else 1.0
+                        }
+                        all_rules.append(rule_info)
+                        active_rules.append(rule_info)
+                    
+                    await self.send_to_client(websocket, {
+                        'type': 'holy_code_rules',
+                        'active_rules': active_rules,
+                        'all_rules': all_rules,
+                        'voting_results': [],
+                        'timestamp': datetime.now().isoformat()
+                    })
+                    logger.info(f"✅ 发送了 {len(all_rules)} 条神圣法典规则")
+                    return
+                else:
+                    logger.warning("⚠️ 未找到rule_engine.rules")
+            
+            # 发送模拟规则数据
+            active_rules = [
+                {
+                    'id': 'mock_rule_1',
+                    'name': '患者安全协议',
+                    'description': '确保患者安全的基本协议',
+                    'priority': 1,
+                    'context': ['medical'],
+                    'active': True,
+                    'weight': 1.0
+                },
+                {
+                    'id': 'mock_rule_2',
+                    'name': '资源分配规则',
+                    'description': '优化医疗资源分配',
+                    'priority': 2,
+                    'context': ['resource'],
+                    'active': True,
+                    'weight': 0.8
+                }
+            ]
+            all_rules = active_rules + [
+                {
+                    'id': 'mock_rule_3',
+                    'name': '质量控制标准',
+                    'description': '医疗质量控制标准',
+                    'priority': 3,
+                    'context': ['quality'],
+                    'active': False,
+                    'weight': 0.6
+                }
+            ]
+            
+            await self.send_to_client(websocket, {
+                'type': 'holy_code_rules', 
+                'active_rules': active_rules,
+                'all_rules': all_rules,
+                'voting_results': [],
+                'timestamp': datetime.now().isoformat()
+            })
+            logger.info("✅ 发送了模拟神圣法典规则")
+            
+        except Exception as e:
+            logger.error(f"❌ 发送初始规则数据失败: {e}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
     
     async def start_server(self):
         """启动WebSocket服务器和HTTP服务器"""

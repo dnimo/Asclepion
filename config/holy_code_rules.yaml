@@ -72,4 +72,13 @@ core_rules:
   priority: 2
   rule_id: GOV_03
   weight: 0.85
+- context:
+  - parliament
+  - consensus
+  description: '基于议会共识创建的规则，共识水平: 0.85'
+  logic_function: _default_condition
+  name: '共识规则: 实施新的安全协议'
+  priority: 3
+  rule_id: consensus_rule_0
+  weight: 0.85
 government_rules: []

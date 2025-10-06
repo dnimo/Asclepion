@@ -124,7 +124,7 @@
         .metric-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
+            gap: 25px;
         }
 
         .metric-item {
@@ -370,6 +370,614 @@
             border-radius: 12px;
         }
 
+        /* 议会综合面板样式 */
+        .parliament-comprehensive-panel {
+            background: linear-gradient(145deg, #f0f8ff 0%, #e6f3ff 100%);
+            border: 2px solid #3182ce;
+            margin-bottom: 20px;
+        }
+
+        .parliament-comprehensive-panel h2 {
+            color: #2b6cb0;
+            border-color: #3182ce;
+        }
+
+        .parliament-comprehensive-content {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+
+        .current-session-compact {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 5px solid #3182ce;
+        }
+
+        .session-header {
+            margin-bottom: 15px;
+        }
+
+        .session-header h3 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .session-indicators {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .session-counter, .session-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .counter-label, .status-label {
+            font-size: 0.8rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .counter-value {
+            background: #3182ce;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .parliament-progress {
+            margin-top: 15px;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .announcements-compact {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 5px solid #4299e1;
+        }
+
+        .announcements-compact h3 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .announcements-scroll {
+            max-height: 250px;
+        }
+
+        /* 系统监控面板样式 */
+        .system-monitoring-panel {
+            background: linear-gradient(145deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .system-monitoring-panel h2 {
+            color: #2d3748;
+            border-color: #4a5568;
+        }
+
+        .monitoring-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .monitoring-section h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .monitoring-section:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 新布局样式 */
+        .grid-container {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .grid-triple {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .grid-double {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .monitoring-chart-panel {
+            background: linear-gradient(145deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #4a5568;
+        }
+
+        .monitoring-chart-panel h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .time-panel {
+            background: linear-gradient(145deg, #fef5e7 0%, #fed7aa 100%);
+            border: 2px solid #f59e0b;
+        }
+
+        .time-panel h2 {
+            color: #92400e;
+        }
+
+        .time-display {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .time-display .current-step {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .time-display .parliament-countdown {
+            font-size: 1em;
+            color: #b45309;
+            opacity: 0.9;
+        }
+
+        /* QQ群聊天室样式 */
+        .chat-room-panel {
+            background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0284c7;
+            min-height: 500px;
+        }
+
+        .chat-room-panel h2 {
+            color: #0c4a6e;
+            margin-bottom: 15px;
+        }
+
+        .chat-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0f2fe;
+            padding-bottom: 10px;
+        }
+
+        .chat-tab-btn {
+            background: #f0f9ff;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+            padding: 8px 16px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .chat-tab-btn:hover {
+            background: #e0f2fe;
+        }
+
+        .chat-tab-btn.active {
+            background: #0284c7;
+            color: white;
+            border-color: #0369a1;
+        }
+
+        .chat-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .chat-window {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .chat-window.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: #e0f2fe;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-info {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+
+        .member-count {
+            color: #0369a1;
+        }
+
+        .session-status {
+            color: #059669;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: white;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: messageSlideIn 0.3s ease;
+        }
+
+        .message-doctor {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            margin-left: 0;
+        }
+
+        .message-intern {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            margin-left: 10%;
+        }
+
+        .message-patient {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            margin-left: 20%;
+        }
+
+        .message-accountant {
+            background: #ede9fe;
+            border-left: 4px solid #8b5cf6;
+            margin-left: 10%;
+        }
+
+        .message-government {
+            background: #fecaca;
+            border-left: 4px solid #ef4444;
+            margin-left: 0;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .message-time {
+            color: #6b7280;
+            font-size: 0.8em;
+        }
+
+        .message-content {
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        .system-message {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .chat-input-area {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .typing-indicator {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        .chat-history-list {
+            padding: 10px;
+        }
+
+        .history-item {
+            background: white;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #f0f9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-header {
+            font-weight: bold;
+            color: #0369a1;
+            margin-bottom: 5px;
+        }
+
+        .history-summary {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .history-time {
+            color: #9ca3af;
+            font-size: 0.8em;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 议会综合面板样式 */
+        .parliament-comprehensive-panel {
+            background: linear-gradient(145deg, #f0f8ff 0%, #e6f3ff 100%);
+            border: 2px solid #3182ce;
+            margin-bottom: 20px;
+        }
+
+        .parliament-comprehensive-panel h2 {
+            color: #2b6cb0;
+            border-color: #3182ce;
+        }
+
+        .parliament-comprehensive-content {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 20px;
+        }
+
+        .current-session-compact {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 5px solid #3182ce;
+        }
+
+        .session-header {
+            margin-bottom: 15px;
+        }
+
+        .session-header h3 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .session-indicators {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .session-counter, .session-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .counter-label, .status-label {
+            font-size: 0.8rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .counter-value {
+            background: #3182ce;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .parliament-progress {
+            margin-top: 15px;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .announcements-compact {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 5px solid #4299e1;
+        }
+
+        .announcements-compact h3 {
+            color: #2b6cb0;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .announcements-scroll {
+            max-height: 250px;
+        }
+
+        /* 系统监控面板样式 */
+        .system-monitoring-panel {
+            background: linear-gradient(145deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px solid #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .system-monitoring-panel h2 {
+            color: #2d3748;
+            border-color: #4a5568;
+        }
+
+        .monitoring-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: #edf2f7;
+            color: #4a5568;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tab-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: #4299e1;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .monitoring-tab-content {
+            display: none;
+        }
+
+        .monitoring-tab-content.active {
+            display: block;
+        }
+
+        .announcement-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #4299e1;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .announcement-item:hover {
+            background: #edf2f7;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .announcement-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .announcement-session {
+            font-weight: bold;
+            color: #2b6cb0;
+            font-size: 1rem;
+        }
+
+        .announcement-time {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .announcement-content {
+            color: #4a5568;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .announcement-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #a0aec0;
+        }
+
+        .consensus-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+
+        .consensus-high { background: #c6f6d5; color: #22543d; }
+        .consensus-medium { background: #feebc8; color: #7b341e; }
+        .consensus-low { background: #fed7d7; color: #742a2a; }
+
+        .proposals-count {
+            color: #4a5568;
+        }
+
         .parliament-countdown {
             font-size: 2rem;
             font-weight: bold;
@@ -434,7 +1042,7 @@
 
         .grid-large {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 3fr 2fr;
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -621,6 +1229,208 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 状态样式 */
+        .status-pending { background: #fbb6ce; color: #97266d; }
+        .status-active { background: #9ae6b4; color: #22543d; }
+        .status-completed { background: #bee3f8; color: #2a69ac; }
+
+        /* QQ群聊天室样式 */
+        .chat-room-panel {
+            background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0284c7;
+            min-height: 500px;
+        }
+
+        .chat-room-panel h2 {
+            color: #0c4a6e;
+            margin-bottom: 15px;
+        }
+
+        .chat-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0f2fe;
+            padding-bottom: 10px;
+        }
+
+        .chat-tab-btn {
+            background: #f0f9ff;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+            padding: 8px 16px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .chat-tab-btn:hover {
+            background: #e0f2fe;
+        }
+
+        .chat-tab-btn.active {
+            background: #0284c7;
+            color: white;
+            border-color: #0369a1;
+        }
+
+        .chat-container {
+            position: relative;
+            height: 400px;
+        }
+
+        .chat-window {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .chat-window.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: #e0f2fe;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-info {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+
+        .member-count, .session-status {
+            color: #0369a1;
+        }
+
+        .chat-messages {
+            flex: 1;
+            background: white;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: messageSlideIn 0.3s ease;
+        }
+
+        .message-doctors { background: #dbeafe; border-left: 4px solid #3b82f6; }
+        .message-interns { background: #d1fae5; border-left: 4px solid #10b981; margin-left: 10%; }
+        .message-patients { background: #fef3c7; border-left: 4px solid #f59e0b; margin-left: 20%; }
+        .message-accountants { background: #ede9fe; border-left: 4px solid #8b5cf6; margin-left: 10%; }
+        .message-government { background: #fecaca; border-left: 4px solid #ef4444; }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+        }
+
+        .message-sender {
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .message-time {
+            color: #6b7280;
+            font-size: 0.8em;
+        }
+
+        .message-content {
+            color: #374151;
+            line-height: 1.4;
+        }
+
+        .system-message {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .chat-input-area {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .typing-indicator {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        .chat-history-list {
+            padding: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: white;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #f0f9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .history-header {
+            font-weight: bold;
+            color: #0369a1;
+            margin-bottom: 5px;
+        }
+
+        .history-summary {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .history-time {
+            color: #9ca3af;
+            font-size: 0.8em;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -643,76 +1453,132 @@
         </div>
 
         <!-- 主要监控面板 -->
-        <div class="grid-large">
-            <!-- 16维系统状态雷达图 -->
-            <div class="panel">
-                <h2>🎯 16维系统状态雷达图</h2>
-                <div class="radar-container">
-                    <canvas id="radarChart"></canvas>
+        <!-- 系统警报横幅 -->
+        <div id="systemAlertBanner" style="display:none; margin-bottom:16px;">
+            <!-- 动态插入警报内容 -->
+        </div>
+        <!-- 第一排：仿真时间、关键性能指标、仿真控制 -->
+        <div class="grid-container grid-triple">
+            <!-- 仿真时间显示 -->
+            <div class="panel time-panel">
+                <h2>⏰ 仿真时间</h2>
+                <div class="time-display">
+                    <div class="current-step">第 <span id="currentStep">0</span> 小时</div>
+                    <div class="parliament-countdown">议会会议倒计时: <span id="parliamentCountdown">7</span>步</div>
                 </div>
             </div>
 
-            <!-- 仿真控制和时间显示 -->
-            <div>
-                <!-- 仿真时间显示 -->
-                <div class="panel simulation-time-panel">
-                    <h2>⏰ 仿真时间</h2>
-                    <div id="simulationTimeDisplay">第 0 小时</div>
-                    <div style="font-size: 1rem; margin-top: 10px; opacity: 0.9;">
-                        议会会议倒计时: <span id="parliamentCountdown">--</span>
+            <!-- 关键性能指标概览 -->
+            <div class="panel">
+                <h2>📈 关键性能指标</h2>
+                <div class="metric-grid" id="performanceMetrics">
+                    <div class="metric-item">
+                        <div class="metric-label">整体性能</div>
+                        <div class="metric-value" id="overallPerformance">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">系统稳定性</div>
+                        <div class="metric-value" id="stability">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">危机数量</div>
+                        <div class="metric-value" id="crisisCount">0</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">议会会议数</div>
+                        <div class="metric-value" id="parliamentMeetings">0</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 性能指标概览 -->
-                <div class="panel">
-                    <h2>📈 关键性能指标</h2>
-                    <div class="metric-grid" id="performanceMetrics">
-                        <div class="metric-item">
-                            <div class="metric-label">整体性能</div>
-                            <div class="metric-value" id="overallPerformance">--</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">系统稳定性</div>
-                            <div class="metric-value" id="stability">--</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">危机数量</div>
-                            <div class="metric-value" id="crisisCount">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">议会会议数</div>
-                            <div class="metric-value" id="parliamentMeetings">0</div>
-                        </div>
+            <!-- 仿真控制状态 -->
+            <div class="panel">
+                <h2>🎮 仿真控制</h2>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">运行状态</div>
+                        <div class="metric-value" id="runningStatus">已停止</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">当前步数</div>
+                        <div class="metric-value" id="currentStepMetric">0</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">智能体数量</div>
+                        <div class="metric-value" id="agentCount">5</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">活跃规则</div>
+                        <div class="metric-value" id="activeRules">0</div>
                     </div>
                 </div>
-
-                <!-- 仿真控制状态 -->
-                <div class="panel">
-                    <h2>🎮 仿真控制</h2>
-                    <div class="metric-grid">
-                        <div class="metric-item">
-                            <div class="metric-label">运行状态</div>
-                            <div class="metric-value" id="runningStatus">已停止</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">当前步数</div>
-                            <div class="metric-value" id="currentStep">0</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">智能体数量</div>
-                            <div class="metric-value" id="agentCount">5</div>
-                        </div>
-                        <div class="metric-item">
-                            <div class="metric-label">活跃规则</div>
-                            <div class="metric-value" id="activeRules">0</div>
-                        </div>
-                    </div>
+                <div class="control-buttons">
+                    <button id="connectBtn" class="control-btn">🔌 连接</button>
+                    <button id="exportBtn" class="control-btn">📊 导出数据</button>
                 </div>
             </div>
         </div>
 
-        <!-- 危机警报 -->
-        <div id="crisisAlerts"></div>
+        <!-- 第二排：系统监控分析 (雷达图和趋势图横向排布) -->
+        <div class="grid-container grid-double">
+            <!-- 16维系统状态雷达图 -->
+            <div class="panel monitoring-chart-panel">
+                <h2>🎯 16维系统状态雷达</h2>
+                <div class="radar-container" style="height:400px; margin:15px 0;">
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 系统性能趋势图 -->
+            <div class="panel monitoring-chart-panel">
+                <h2>📈 系统性能趋势</h2>
+                <div class="chart-container" style="height:400px; margin:15px 0;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    <!-- 危机警报 -->
+    <!-- 已删除 funding_cut 危机警报展示区 -->
+
+        <!-- 议会综合面板 (合并议会状态和公告) -->
+        <div class="panel parliament-comprehensive-panel">
+            <h2>🏛️ 议会治理中心</h2>
+            <div class="parliament-comprehensive-content">
+                <!-- 当前会期状态 -->
+                <div class="current-session-compact" id="currentSession">
+                    <div class="session-header">
+                        <h3>� 当前会期</h3>
+                        <div class="session-indicators">
+                            <div class="session-counter">
+                                <span class="counter-label">下次会议:</span>
+                                <span class="counter-value" id="sessionCountdown">7步</span>
+                            </div>
+                            <div class="session-status">
+                                <span class="status-label">状态:</span>
+                                <span class="status-value" id="sessionStatus">待召开</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 议会投票进度 -->
+                    <div class="parliament-progress">
+                        <div class="progress-label">共识达成度: <span id="consensusLevel">0%</span></div>
+                        <div class="vote-progress">
+                            <div class="vote-fill" id="consensusProgress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 历次议会决议 -->
+                <div class="announcements-compact">
+                    <h3>📋 历次决议</h3>
+                    <div class="scrollable announcements-scroll" id="parliamentAnnouncements">
+                        <div class="loading">等待议会会议...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 三列布局 -->
         <div class="grid-triple">
@@ -724,25 +1590,74 @@
                 </div>
             </div>
 
-            <!-- 智能体协商对话 -->
-            <div class="panel">
-                <h2>💬 智能体对话</h2>
-                <div class="dialog-container" id="agentDialogs">
-                    <div class="loading">等待对话数据...</div>
+            <!-- 智能体协商对话 - QQ群聊天室样式 -->
+            <div class="panel chat-room-panel">
+                <h2>💬 智能体群聊室</h2>
+                
+                <!-- 议会会话切换标签页 -->
+                <div class="chat-tabs" id="chatTabs">
+                    <button class="chat-tab-btn active" data-session="current">
+                        🏛️ 当前会期 (第1期)
+                    </button>
+                    <button class="chat-tab-btn" data-session="archive">
+                        📚 历史记录
+                    </button>
+                </div>
+                
+                <!-- 聊天容器 -->
+                <div class="chat-container">
+                    <!-- 当前会期聊天 -->
+                    <div class="chat-window active" id="currentChatWindow">
+                        <div class="chat-header">
+                            <div class="chat-info">
+                                <span class="member-count">👥 5名成员在线</span>
+                                <span class="session-status">🟢 会议进行中</span>
+                            </div>
+                        </div>
+                        <div class="chat-messages" id="currentChatMessages">
+                            <div class="system-message">
+                                📢 第1期议会会议开始，欢迎各位智能体参与讨论
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="typing-indicator" id="typingIndicator" style="display:none;">
+                                <span class="typing-text">🤖 某位智能体正在思考中...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 历史记录窗口 -->
+                    <div class="chat-window" id="archiveChatWindow">
+                        <div class="chat-history-list" id="chatHistoryList">
+                            <div class="history-item">
+                                <div class="history-header">第0期议会会议</div>
+                                <div class="history-summary">系统初始化，智能体首次见面</div>
+                                <div class="history-time">刚刚</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 议会状态 -->
-            <div class="panel parliament-panel">
-                <h2>🏛️ 议会状态</h2>
-                <div id="parliamentStatus">
-                    <div class="parliament-status">
-                        <div class="parliament-countdown" id="parliamentTimer">168h</div>
-                        <div>距离下次议会会议</div>
-                        <div class="vote-progress">
-                            <div class="vote-fill" id="consensusProgress" style="width: 0%"></div>
-                        </div>
-                        <div>共识达成度: <span id="consensusLevel">0%</span></div>
+            <!-- 关键性能指标概览 -->
+            <div class="panel">
+                <h2>📈 关键性能指标</h2>
+                <div class="metric-grid" id="performanceMetrics">
+                    <div class="metric-item">
+                        <div class="metric-label">整体性能</div>
+                        <div class="metric-value" id="overallPerformance">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">系统稳定性</div>
+                        <div class="metric-value" id="stability">--</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">危机数量</div>
+                        <div class="metric-value" id="crisisCount">0</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">议会会议数</div>
+                        <div class="metric-value" id="parliamentMeetings">0</div>
                     </div>
                 </div>
             </div>
@@ -766,14 +1681,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- 性能趋势图 -->
-        <div class="panel">
-            <h2>📈 系统性能趋势</h2>
-            <div class="chart-container">
-                <canvas id="performanceChart"></canvas>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -791,9 +1698,15 @@
                 this.maxHistoryLength = 50;
                 this.currentStep = 0;
                 
+                // 聊天室相关状态
+                this.currentSessionId = 1;
+                this.chatHistory = new Map(); // 存储各个会议的聊天记录
+                this.currentChatMessages = [];
+                
                 // UI元素
                 this.initializeElements();
                 this.initializeChart();
+                this.initializeChatRoom();
                 
                 // 自动连接
                 this.connect();
@@ -814,7 +1727,8 @@
                     agentCount: document.getElementById('agentCount'),
                     activeRules: document.getElementById('activeRules'),
                     agentCards: document.getElementById('agentCards'),
-                    agentDialogs: document.getElementById('agentDialogs'),
+                    currentChatMessages: document.getElementById('currentChatMessages'),
+                    chatHistoryList: document.getElementById('chatHistoryList'),
                     allRules: document.getElementById('allRules'),
                     crisisAlerts: document.getElementById('crisisAlerts'),
                     parliamentStatus: document.getElementById('parliamentStatus'),
@@ -824,7 +1738,10 @@
                     overallPerformance: document.getElementById('overallPerformance'),
                     stability: document.getElementById('stability'),
                     crisisCount: document.getElementById('crisisCount'),
-                    parliamentMeetings: document.getElementById('parliamentMeetings')
+                    parliamentMeetings: document.getElementById('parliamentMeetings'),
+                    sessionCountdown: document.getElementById('sessionCountdown'),
+                    sessionStatus: document.getElementById('sessionStatus'),
+                    parliamentAnnouncements: document.getElementById('parliamentAnnouncements')
                 };
 
                 // 绑定事件
@@ -832,6 +1749,111 @@
                 this.elements.pauseBtn.onclick = () => this.sendCommand('pause');
                 this.elements.resetBtn.onclick = () => this.sendCommand('reset');
                 this.elements.connectBtn.onclick = () => this.connect();
+            }
+            
+            switchMonitoringTab(tabName) {
+                // 切换标签页按钮状态
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // 切换内容显示
+                document.querySelectorAll('.monitoring-tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                if (tabName === 'radar') {
+                    document.getElementById('radarTab').classList.add('active');
+                    // 重新渲染雷达图以适应新容器
+                    setTimeout(() => {
+                        if (this.radarChart) {
+                            this.radarChart.resize();
+                        }
+                    }, 100);
+                } else if (tabName === 'trends') {
+                    document.getElementById('trendsTab').classList.add('active');
+                    // 重新渲染性能图以适应新容器
+                    setTimeout(() => {
+                        if (this.chart) {
+                            this.chart.resize();
+                        }
+                    }, 100);
+                }
+            }
+
+            initializeChatRoom() {
+                // 初始化聊天室切换功能
+                const chatTabs = document.querySelectorAll('.chat-tab-btn');
+                chatTabs.forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        const sessionType = e.target.getAttribute('data-session');
+                        this.switchChatSession(sessionType);
+                    });
+                });
+                
+                // 更新当前会期标题
+                this.updateChatSessionTitle();
+            }
+            
+            switchChatSession(sessionType) {
+                // 切换标签页状态
+                document.querySelectorAll('.chat-tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-session="${sessionType}"]`).classList.add('active');
+                
+                // 切换窗口显示
+                document.querySelectorAll('.chat-window').forEach(window => {
+                    window.classList.remove('active');
+                });
+                
+                if (sessionType === 'current') {
+                    document.getElementById('currentChatWindow').classList.add('active');
+                } else if (sessionType === 'archive') {
+                    document.getElementById('archiveChatWindow').classList.add('active');
+                    this.loadChatHistory();
+                }
+            }
+            
+            updateChatSessionTitle() {
+                const currentTab = document.querySelector('[data-session="current"]');
+                if (currentTab) {
+                    currentTab.innerHTML = `🏛️ 当前会期 (第${this.currentSessionId}期)`;
+                }
+            }
+            
+            loadChatHistory() {
+                const historyContainer = this.elements.chatHistoryList;
+                if (!historyContainer) return;
+                
+                let html = '';
+                this.chatHistory.forEach((messages, sessionId) => {
+                    const messageCount = messages.length;
+                    const lastMessage = messages[messages.length - 1];
+                    const summary = messageCount > 0 ? 
+                        `${messageCount}条消息，最后发言：${lastMessage.content.substring(0, 20)}...` : 
+                        '暂无消息';
+                    
+                    html += `
+                        <div class="history-item" onclick="window.hospitalMonitor.viewHistorySession(${sessionId})">
+                            <div class="history-header">第${sessionId}期议会会议</div>
+                            <div class="history-summary">${summary}</div>
+                            <div class="history-time">会议已结束</div>
+                        </div>
+                    `;
+                });
+                
+                if (html === '') {
+                    html = '<div class="system-message">暂无历史会议记录</div>';
+                }
+                
+                historyContainer.innerHTML = html;
+            }
+            
+            viewHistorySession(sessionId) {
+                // 可以在这里添加查看历史会议详情的功能
+                alert(`查看第${sessionId}期议会会议详情功能待开发`);
             }
 
             initializeChart() {
@@ -948,7 +1970,9 @@
                 this.holyCodeRules = new Map();
                 this.currentCrises = new Map();
                 this.dialogHistory = [];
-                this.parliamentCountdown = 168; // 议会倒计时
+                this.parliamentCountdown = 7; // 议会倒计时（每7步）
+                this.parliamentAnnouncements = []; // 议会公告历史
+                this.parliamentSessionStatus = 'pending'; // 会议状态
             }
 
             connect() {
@@ -1069,6 +2093,9 @@
                     case 'holy_code_update':
                         this.handleHolyCodeUpdate(data);
                         break;
+                    case 'holy_code_rules':
+                        this.handleHolyCodeRules(data);
+                        break;
                     case 'metrics':
                         this.handleMetrics(data);
                         break;
@@ -1082,12 +2109,15 @@
 
             handleWelcome(data) {
                 console.log('🎉 欢迎消息:', data.message);
+                // 显示服务器信息到控制台
                 if (data.server_info) {
-                    this.elements.integrationStatus.textContent = data.server_info.integration_status || '生产模式';
+                    console.log('📡 服务器信息:', data.server_info);
                 }
             }
 
             handleSystemStatus(data) {
+                console.log('📊 系统状态数据:', data);
+                
                 if (data.simulation) {
                     this.elements.runningStatus.textContent = data.simulation.running ? '运行中' : '已停止';
                     this.elements.currentStep.textContent = data.simulation.step || 0;
@@ -1105,17 +2135,24 @@
                     }
                 }
                 
-                this.elements.agentCount.textContent = data.agents_count || 0;
-                this.elements.integrationStatus.textContent = data.integration_status || '未知';
-                
-                // 处理系统状态
-                if (data.system_state && data.system_state.length > 0) {
-                    this.updateSystemStateMatrix(data.system_state);
+                // 更新智能体数量显示
+                if (data.agents_count !== undefined) {
+                    this.elements.agentCount.textContent = data.agents_count;
+                    console.log('🤖 智能体数量:', data.agents_count);
                 }
+                
+                console.log('🔧 集成状态:', data.integration_status || '未知');
                 
                 // 处理性能指标
                 if (data.performance_metrics) {
                     this.updatePerformanceMetrics(data.performance_metrics);
+                    // 同时更新雷达图
+                    this.updateRadarChart(data.performance_metrics);
+                }
+                
+                // 初始化智能体卡片（如果还未初始化）
+                if (this.elements.agentCards.querySelector('.loading')) {
+                    this.renderAgentCards();
                 }
             }
 
@@ -1162,13 +2199,15 @@
                     last_decision: data.action,
                     confidence: data.confidence,
                     status: 'active',
-                    reasoning: data.reasoning
+                    reasoning: data.reasoning,
+                    decision_layer: data.decision_layer || 'Unknown'
                 });
                 
-                // 添加到对话中
+                // 添加到对话中 - 包含决策层级信息
+                const layerBadge = this.getDecisionLayerBadge(data.decision_layer);
                 this.addDialog({
                     participants: [data.agent_id],
-                    content: `${data.action}: ${data.reasoning}`,
+                    content: `${layerBadge} ${data.action}: ${data.reasoning}`,
                     type: 'decision',
                     timestamp: data.timestamp || new Date().toISOString()
                 });
@@ -1238,39 +2277,66 @@
             handleParliamentMeeting(data) {
                 console.log('🏛️ 议会会议:', data);
                 
-                if (data.consensus_level !== undefined) {
-                    const consensusPercent = (data.consensus_level * 100).toFixed(1);
+                // 处理议会结果数据
+                const parliamentResult = data.parliament_result || data;
+                if (parliamentResult.consensus && parliamentResult.consensus.consensus_level !== undefined) {
+                    const consensusPercent = (parliamentResult.consensus.consensus_level * 100).toFixed(1);
                     this.elements.consensusLevel.textContent = consensusPercent + '%';
                     this.elements.consensusProgress.style.width = consensusPercent + '%';
                 }
                 
-                // 显示会议结果
-                if (data.main_decision) {
+                // 添加到议会公告
+                if (parliamentResult.consensus) {
+                    this.addParliamentAnnouncement({
+                        consensus_level: parliamentResult.consensus.consensus_level || 0.5,
+                        main_decision: parliamentResult.consensus.main_decision || '议会通过治理决议',
+                        session_number: this.parliamentAnnouncements.length + 1,
+                        timestamp: new Date().toISOString(),
+                        proposals_count: parliamentResult.proposals ? Object.keys(parliamentResult.proposals).length : 5
+                    });
+                }
+                
+                // 显示会议结果（保留原有对话显示）
+                if (parliamentResult.consensus && parliamentResult.consensus.main_decision) {
                     this.addDialog({
                         participants: ['议会主席'],
-                        content: `议会决议: ${data.main_decision}`,
+                        content: `议会决议: ${parliamentResult.consensus.main_decision}`,
                         type: 'parliament',
                         timestamp: new Date().toISOString()
                     });
                 }
+                
+                // 重置会议状态
+                this.parliamentSessionStatus = 'completed';
+                this.updateParliamentSessionStatus();
+                
+                // 3秒后重置为待召开状态
+                setTimeout(() => {
+                    this.parliamentSessionStatus = 'pending';
+                    this.updateParliamentSessionStatus();
+                }, 3000);
             }
 
             handleCrisis(data) {
                 console.log('🚨 危机事件:', data);
-                
-                // 更新危机警报
-                const crisisId = `${data.crisis_type}_${Date.now()}`;
-                this.currentCrises.set(crisisId, data);
-                
-                this.updateCrisisAlerts();
-                
-                // 添加到对话中
-                this.addDialog({
-                    participants: ['系统警报'],
-                    content: `危机事件: ${data.description || data.crisis_type}`,
-                    type: 'crisis',
-                    timestamp: new Date().toISOString()
-                });
+                // 只在横幅展示系统警报
+                this.showSystemAlertBanner(data);
+            }
+
+            showSystemAlertBanner(data) {
+                const banner = document.getElementById('systemAlertBanner');
+                const severityText = this.getSeverityText(data.severity);
+                banner.innerHTML = `
+                    <div style="background:linear-gradient(90deg,#fed7d7,#feb2b2);border:2px solid #e53e3e;border-radius:12px;padding:18px 24px;display:flex;align-items:center;animation:pulse 2s infinite;">
+                        <span style="font-size:28px;margin-right:16px;">🚨</span>
+                        <span style="font-weight:bold;color:#742a2a;font-size:1.15rem;">系统警报：</span>
+                        <span style="margin-left:12px;font-size:1rem;">${data.description || data.crisis_type} (严重程度: ${data.severity})</span>
+                        <span style="margin-left:auto;padding:6px 16px;border-radius:10px;font-size:0.95rem;font-weight:bold;background:#742a2a;color:white;">${severityText}</span>
+                    </div>
+                `;
+                banner.style.display = '';
+                // 自动消失5秒
+                setTimeout(() => { banner.style.display = 'none'; }, 5000);
             }
 
             updateCrisisAlerts() {
@@ -1296,14 +2362,46 @@
                 this.elements.crisisCount.textContent = this.currentCrises.size;
             }
 
+            handleHolyCodeRules(data) {
+                console.log('⚖️ 神圣法典规则数据:', data);
+                
+                // 清空现有规则
+                this.holyCodeRules.clear();
+                
+                // 处理所有规则
+                if (data.all_rules && Array.isArray(data.all_rules)) {
+                    data.all_rules.forEach(rule => {
+                        this.holyCodeRules.set(rule.id, {
+                            rule_id: rule.id,
+                            name: rule.name,
+                            description: rule.description,
+                            active: rule.active,
+                            priority: rule.priority,
+                            context: rule.context,
+                            weight: rule.weight
+                        });
+                    });
+                    
+                    this.updateHolyCodeRules();
+                    console.log(`✅ 更新了 ${data.all_rules.length} 条神圣法典规则`);
+                }
+            }
+
             handleHolyCodeUpdate(data) {
                 console.log('⚖️ 神圣法典更新:', data);
                 
                 if (data.new_rule) {
-                    this.holyCodeRules.set(data.new_rule.rule_id, data.new_rule);
+                    const rule = data.new_rule;
+                    this.holyCodeRules.set(rule.rule_id, {
+                        rule_id: rule.rule_id,
+                        name: rule.rule_text,
+                        rule_text: rule.rule_text,
+                        active: rule.active,
+                        priority: rule.priority,
+                        creation_step: rule.creation_step
+                    });
+                    this.updateHolyCodeRules();
                 }
-                
-                this.updateHolyCodeRules();
             }
 
             updateHolyCodeRules() {
@@ -1315,17 +2413,20 @@
                 let activeCount = 0;
                 
                 this.holyCodeRules.forEach(rule => {
-                    const priorityClass = this.getPriorityClass(rule.priority || 0.5);
-                    const priorityText = this.getPriorityText(rule.priority || 0.5);
+                    const priorityClass = this.getPriorityClass(rule.priority || 3);
+                    const priorityText = this.getPriorityText(rule.priority || 3);
                     
                     const ruleHtml = `
                         <div class="rule-item ${rule.active ? 'rule-active' : 'rule-inactive'}">
                             <div class="rule-header">
-                                <span class="rule-name">${rule.rule_text || rule.name}</span>
+                                <span class="rule-name">${rule.name || rule.rule_id}</span>
                                 <span class="rule-priority ${priorityClass}">${priorityText}</span>
                             </div>
+                            <div class="rule-description" style="font-size: 0.9rem; color: #4a5568; margin: 5px 0;">
+                                ${rule.description || '暂无描述'}
+                            </div>
                             <div style="font-size: 0.8rem; color: #718096;">
-                                创建于第 ${rule.creation_step || 0} 步
+                                权重: ${rule.weight || 1.0} | 上下文: ${Array.isArray(rule.context) ? rule.context.join(', ') : (rule.context || 'general')}
                             </div>
                         </div>
                     `;
@@ -1341,20 +2442,29 @@
                 activeContainer.innerHTML = activeHtml || '<div class="loading">暂无激活规则</div>';
                 allContainer.innerHTML = allHtml || '<div class="loading">暂无规则</div>';
                 
-                // 更新激洺规则数量
-                this.elements.activeRules.textContent = activeCount;
+                // 更新激活规则数量到控制面板
+                const activeRulesCountElement = document.getElementById('activeRules');
+                if (activeRulesCountElement) {
+                    activeRulesCountElement.textContent = activeCount;
+                }
             }
 
             getPriorityClass(priority) {
-                if (priority > 0.7) return 'priority-high';
-                if (priority > 0.4) return 'priority-medium';
-                return 'priority-low';
+                // 新的优先级系统：1=CRITICAL, 2=HIGH, 3=MEDIUM, 4=LOW
+                if (priority === 1) return 'priority-high';  // CRITICAL
+                if (priority === 2) return 'priority-high';  // HIGH
+                if (priority === 3) return 'priority-medium'; // MEDIUM
+                if (priority === 4) return 'priority-low';    // LOW
+                return 'priority-medium'; // 默认
             }
 
             getPriorityText(priority) {
-                if (priority > 0.7) return '高';
-                if (priority > 0.4) return '中';
-                return '低';
+                // 新的优先级系统：1=CRITICAL, 2=HIGH, 3=MEDIUM, 4=LOW
+                if (priority === 1) return '危急';  // CRITICAL
+                if (priority === 2) return '高';    // HIGH
+                if (priority === 3) return '中';    // MEDIUM
+                if (priority === 4) return '低';    // LOW
+                return '中'; // 默认
             }
 
             updateSimulationTime(step) {
@@ -1362,13 +2472,112 @@
                 const hour = step;
                 this.elements.simulationTimeDisplay.textContent = `第 ${hour} 小时`;
                 
-                // 更新议会倒计时
-                this.parliamentCountdown = 168 - (hour % 168);
-                this.elements.parliamentCountdown.textContent = `${this.parliamentCountdown}h`;
-                this.elements.parliamentTimer.textContent = `${this.parliamentCountdown}h`;
+                // 更新议会倒计时（每7步召开一次）
+                this.parliamentCountdown = 7 - (hour % 7);
+                this.elements.parliamentCountdown.textContent = `${this.parliamentCountdown}步`;
+                
+                // 更新议会公告栏的倒计时
+                if (this.elements.sessionCountdown) {
+                    this.elements.sessionCountdown.textContent = `${this.parliamentCountdown}步`;
+                }
+                
+                // 检查是否即将召开会议
+                if (this.parliamentCountdown === 1) {
+                    this.parliamentSessionStatus = 'upcoming';
+                } else if (this.parliamentCountdown === 0) {
+                    this.parliamentSessionStatus = 'active';
+                } else {
+                    this.parliamentSessionStatus = 'pending';
+                }
+                
+                this.updateParliamentSessionStatus();
+            }
+            
+            addParliamentAnnouncement(announcement) {
+                // 添加到公告历史
+                this.parliamentAnnouncements.unshift(announcement);
+                
+                // 保持最多20条公告
+                if (this.parliamentAnnouncements.length > 20) {
+                    this.parliamentAnnouncements = this.parliamentAnnouncements.slice(0, 20);
+                }
+                
+                this.renderParliamentAnnouncements();
+            }
+            
+            renderParliamentAnnouncements() {
+                if (!this.elements.parliamentAnnouncements) return;
+                
+                let html = '';
+                
+                this.parliamentAnnouncements.forEach(announcement => {
+                    const consensusLevel = announcement.consensus_level * 100;
+                    const consensusClass = this.getConsensusClass(consensusLevel);
+                    const consensusText = this.getConsensusText(consensusLevel);
+                    
+                    html += `
+                        <div class="announcement-item">
+                            <div class="announcement-header">
+                                <span class="announcement-session">第${announcement.session_number}次会议</span>
+                                <span class="announcement-time">${new Date(announcement.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div class="announcement-content">
+                                ${announcement.main_decision}
+                            </div>
+                            <div class="announcement-meta">
+                                <span class="proposals-count">📋 提案数: ${announcement.proposals_count}</span>
+                                <span class="consensus-badge ${consensusClass}">
+                                    共识度: ${consensusLevel.toFixed(1)}% ${consensusText}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                this.elements.parliamentAnnouncements.innerHTML = html || '<div class="loading">等待议会会议...</div>';
+            }
+            
+            updateParliamentSessionStatus() {
+                if (!this.elements.sessionStatus) return;
+                
+                const statusElement = this.elements.sessionStatus;
+                statusElement.className = 'status-value';
+                
+                switch (this.parliamentSessionStatus) {
+                    case 'pending':
+                        statusElement.textContent = '待召开';
+                        statusElement.classList.add('status-pending');
+                        break;
+                    case 'upcoming':
+                        statusElement.textContent = '即将召开';
+                        statusElement.classList.add('status-pending');
+                        break;
+                    case 'active':
+                        statusElement.textContent = '进行中';
+                        statusElement.classList.add('status-active');
+                        break;
+                    case 'completed':
+                        statusElement.textContent = '已完成';
+                        statusElement.classList.add('status-completed');
+                        break;
+                }
+            }
+            
+            getConsensusClass(consensusLevel) {
+                if (consensusLevel >= 70) return 'consensus-high';
+                if (consensusLevel >= 50) return 'consensus-medium';
+                return 'consensus-low';
+            }
+            
+            getConsensusText(consensusLevel) {
+                if (consensusLevel >= 70) return '高度共识';
+                if (consensusLevel >= 50) return '中等共识';
+                return '低度共识';
             }
             
             updatePerformanceMetrics(metrics) {
+                console.log('📊 更新性能指标:', metrics);
+                
                 if (metrics.overall_performance !== undefined) {
                     this.elements.overallPerformance.textContent = (metrics.overall_performance * 100).toFixed(1) + '%';
                 }
@@ -1381,6 +2590,9 @@
                 if (metrics.parliament_meetings !== undefined) {
                     this.elements.parliamentMeetings.textContent = metrics.parliament_meetings;
                 }
+                
+                // 添加到性能历史
+                this.addToPerformanceHistory(metrics);
             }
 
             updateSystemStateMatrix(stateArray) {
@@ -1442,20 +2654,7 @@
                 return labels[key] || key;
             }
 
-            updatePerformanceMetrics(metrics) {
-                if (metrics.stability !== undefined) {
-                    this.elements.stability.textContent = (metrics.stability * 100).toFixed(1) + '%';
-                }
-                if (metrics.safety_index !== undefined) {
-                    this.elements.safety.textContent = (metrics.safety_index * 100).toFixed(1) + '%';
-                }
-                if (metrics.cost_efficiency !== undefined) {
-                    this.elements.efficiency.textContent = (metrics.cost_efficiency * 100).toFixed(1) + '%';
-                }
-                if (metrics.patient_satisfaction !== undefined) {
-                    this.elements.satisfaction.textContent = (metrics.patient_satisfaction * 100).toFixed(1) + '%';
-                }
-            }
+
 
             updateAgentCard(agentId, agentData) {
                 const container = this.elements.agentCards;
@@ -1529,6 +2728,7 @@
                                 <div style="font-size: 0.9rem; color: #4a5568; margin-bottom: 5px;">
                                     🎯 最近决策: ${state.last_decision}
                                 </div>
+                                ${state.decision_layer ? `<div style="margin-top: 5px;">${this.getDecisionLayerBadge(state.decision_layer)}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -1596,51 +2796,74 @@
             }
 
             addDialog(dialog) {
-                const container = this.elements.agentDialogs;
-                if (container.querySelector('.loading')) {
+                if (!this.elements.currentChatMessages) return;
+                
+                const container = this.elements.currentChatMessages;
+                if (container.querySelector('.system-message')) {
                     container.innerHTML = '';
                 }
                 
-                // 添加到对话历史
-                this.dialogHistory.unshift(dialog);
+                // 添加到当前会话的对话历史
+                this.currentChatMessages.unshift(dialog);
                 
-                // 保持最多20条对话
-                if (this.dialogHistory.length > 20) {
-                    this.dialogHistory = this.dialogHistory.slice(0, 20);
+                // 保持最多50条对话
+                if (this.currentChatMessages.length > 50) {
+                    this.currentChatMessages = this.currentChatMessages.slice(0, 50);
                 }
                 
-                this.renderDialogs();
+                this.renderChatMessages();
             }
             
-            renderDialogs() {
-                const container = this.elements.agentDialogs;
+            renderChatMessages() {
+                const container = this.elements.currentChatMessages;
+                if (!container) return;
+                
                 let html = '';
                 
-                this.dialogHistory.forEach(dialog => {
+                this.currentChatMessages.forEach(dialog => {
                     const participants = Array.isArray(dialog.participants) 
-                        ? dialog.participants.join(', ') 
-                        : dialog.participants || '系统';
+                        ? dialog.participants 
+                        : [dialog.participants];
                     
-                    const dialogType = dialog.type || 'normal';
-                    const typeText = this.getDialogTypeText(dialogType);
+                    const content = dialog.content || dialog.message || '内容为空';
+                    const timestamp = dialog.timestamp || new Date().toLocaleTimeString();
+                    
+                    // 根据参与者确定消息类型
+                    let messageClass = 'message-doctors';
+                    let senderName = participants.join(', ');
+                    
+                    if (participants.includes('interns') || participants.includes('实习生群体')) {
+                        messageClass = 'message-interns';
+                        senderName = '实习生群体';
+                    } else if (participants.includes('patients') || participants.includes('患者代表')) {
+                        messageClass = 'message-patients';
+                        senderName = '患者代表';
+                    } else if (participants.includes('accountants') || participants.includes('会计群体')) {
+                        messageClass = 'message-accountants';
+                        senderName = '会计群体';
+                    } else if (participants.includes('government') || participants.includes('政府监管')) {
+                        messageClass = 'message-government';
+                        senderName = '政府监管';
+                    } else if (participants.includes('doctors') || participants.includes('医生群体')) {
+                        messageClass = 'message-doctors';
+                        senderName = '医生群体';
+                    }
                     
                     html += `
-                        <div class="dialog-message">
-                            <div class="dialog-header">
-                                <span class="dialog-participants">💬 ${participants}</span>
-                                <span class="dialog-type">${typeText}</span>
+                        <div class="chat-message ${messageClass}">
+                            <div class="message-header">
+                                <span class="message-sender">${senderName}</span>
+                                <span class="message-time">${timestamp}</span>
                             </div>
-                            <div class="dialog-content">${dialog.content}</div>
-                            <div class="dialog-meta">
-                                <span>${new Date(dialog.timestamp).toLocaleTimeString()}</span>
-                            </div>
+                            <div class="message-content">${content}</div>
                         </div>
                     `;
                 });
                 
-                container.innerHTML = html || '<div class="loading">暂无对话数据</div>';
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
             }
-            
+
             getDialogTypeText(type) {
                 switch(type) {
                     case 'parliament': return '议会';
@@ -1649,6 +2872,19 @@
                     case 'decision': return '决策';
                     default: return '交流';
                 }
+            }
+
+            getDecisionLayerBadge(layer) {
+                const layerConfig = {
+                    'MADDPG深度强化学习': { emoji: '🧠', color: '#667eea', text: 'MADDPG' },
+                    'LLM智能生成': { emoji: '💭', color: '#48bb78', text: 'LLM' },
+                    '分布式控制器': { emoji: '⚙️', color: '#ed8936', text: '控制器' },
+                    '数学策略模板': { emoji: '📐', color: '#805ad5', text: '数学' },
+                    '基础模板': { emoji: '📋', color: '#718096', text: '模板' }
+                };
+                
+                const config = layerConfig[layer] || layerConfig['基础模板'];
+                return `<span style="background: ${config.color}; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.8rem; margin-right: 5px;">${config.emoji} ${config.text}</span>`;
             }
 
             getSeverityClass(severity) {
@@ -1707,17 +2943,25 @@
                 this.agentStates.clear();
                 this.holyCodeRules.clear();
                 this.currentCrises.clear();
-                this.dialogHistory = [];
-                this.parliamentCountdown = 168;
+                this.currentChatMessages = [];
+                this.parliamentCountdown = 7;
+                this.parliamentAnnouncements = [];
+                this.parliamentSessionStatus = 'pending';
                 
                 this.updateChart();
                 
                 // 清空显示区域
                 this.elements.agentCards.innerHTML = '<div class="loading">正在加载智能体...</div>';
-                this.elements.agentDialogs.innerHTML = '<div class="loading">等待对话数据...</div>';
+                if (this.elements.currentChatMessages) {
+                    this.elements.currentChatMessages.innerHTML = '<div class="system-message">📢 等待智能体开始对话...</div>';
+                }
                 this.elements.activeRules.innerHTML = '<div class="loading">等待规则数据...</div>';
                 this.elements.allRules.innerHTML = '<div class="loading">等待规则数据...</div>';
                 this.elements.crisisAlerts.innerHTML = '';
+                if (this.elements.parliamentAnnouncements) {
+                    this.elements.parliamentAnnouncements.innerHTML = '<div class="loading">等待议会会议...</div>';
+                }
+                this.updateParliamentSessionStatus();
                 
                 // 重置雷达图
                 this.radarChart.data.datasets[0].data = new Array(16).fill(0.5);

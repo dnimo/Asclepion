@@ -1,0 +1,66 @@
+# 医院治理系统模拟场景配置
+
+scenarios:
+  - name: 基础运营
+    description: 正常运营，无危机
+    initial_state:
+      medical_quality: 0.85
+      patient_safety: 0.9
+      care_quality: 0.8
+      resource_adequacy: 0.7
+      resource_utilization: 0.75
+      resource_access: 0.8
+      education_quality: 0.7
+      training_hours: 30.0
+      mentorship_availability: 0.6
+      career_development: 0.65
+      financial_health: 0.8
+      cost_efficiency: 0.75
+      revenue_growth: 0.7
+      patient_satisfaction: 0.75
+      accessibility: 0.8
+      waiting_times: 0.3
+      staff_satisfaction: 0.7
+      workload: 0.6
+      salary_satisfaction: 0.65
+      system_stability: 0.8
+      ethics_compliance: 0.85
+      regulatory_compliance: 0.9
+      public_trust: 0.75
+      overall_performance: 0.78
+      crisis_severity: 0.0
+
+    crises: []
+
+    parliament_meetings:
+      - step: 168
+        agenda: "年度预算审议"
+        expected_decision: "维持现有预算"
+
+    rules_activated:
+      - ETHICS_001
+      - RESOURCE_001
+
+  - name: 资金削减危机
+    description: 触发资金削减危机，考验应急响应
+    initial_state:
+      financial_health: 0.4
+      cash_reserves: 0.3
+      crisis_severity: 0.67
+
+    crises:
+      - type: funding_cut
+        description: "医院遭遇资金削减，运营受限"
+        severity: 0.67
+        step: 24
+
+    parliament_meetings:
+      - step: 168
+        agenda: "紧急资金补充"
+        expected_decision: "申请政府补助"
+
+    rules_activated:
+      - CRISIS_001
+      - FINANCIAL_OVERSIGHT
+
+# 可继续添加更多场景

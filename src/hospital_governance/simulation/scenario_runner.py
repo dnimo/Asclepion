@@ -50,19 +50,54 @@ class ScenarioRunner:
         import yaml
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
-                configs = yaml.safe_load(f)
-            self.scenarios = [self.load_scenario(cfg) for cfg in configs]
+                data = yaml.safe_load(f)
+            
+            # 获取scenarios列表
+            scenario_configs = data.get('scenarios', [])
+            
+            # 转换为CrisisScenario对象
+            self.scenarios = []
+            for config in scenario_configs:
+                # 检查是否有crises字段来构建CrisisScenario
+                if 'crises' in config and config['crises']:
+                    for crisis in config['crises']:
+                        scenario = CrisisScenario(
+                            name=f"{config['name']} - {crisis.get('description', '')}",
+                            scenario_type=ScenarioType.FUNDING_CUT if crisis['type'] == 'funding_cut' else ScenarioType.BASELINE,
+                            severity=crisis.get('severity', 0.5),
+                            duration=50,  # 默认持续时间
+                            start_step=crisis.get('step', 0),
+                            affected_metrics=['financial_health', 'resource_utilization']  # 默认影响指标
+                        )
+                        self.scenarios.append(scenario)
+                else:
+                    # 基础场景
+                    scenario = CrisisScenario(
+                        name=config['name'],
+                        scenario_type=ScenarioType.BASELINE,
+                        severity=0.0,
+                        duration=100,
+                        start_step=0,
+                        affected_metrics=[]
+                    )
+                    self.scenarios.append(scenario)
+            
             print(f"从 {filepath} 加载了 {len(self.scenarios)} 个场景")
         except Exception as e:
             print(f"加载场景yaml错误: {e}")
+            self.scenarios = []
 
     def check_and_insert_event(self, current_step: int):
         """根据当前步数检测并插入危机事件"""
         for scenario in self.scenarios:
             if scenario.start_step == current_step:
+                # 确保有affected_metrics字段
+                affected_metrics = getattr(scenario, 'affected_metrics', ['financial_health', 'resource_utilization'])
+                
                 self.simulator._apply_crisis_effects({
                     'type': scenario.scenario_type.value,
-                    'severity': scenario.severity
+                    'severity': scenario.severity,
+                    'affected_metrics': affected_metrics
                 })
                 self.active_scenarios.append(scenario)
     

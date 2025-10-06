@@ -25,7 +25,9 @@ class ReferenceType(Enum):
     SETPOINT = "setpoint"           # 设定点参考
     TRAJECTORY = "trajectory"       # 轨迹参考  
     ADAPTIVE = "adaptive"           # 自适应参考
-    CRISIS_RESPONSE = "crisis_response"  # 危机响应参考@dataclass
+    CRISIS_RESPONSE = "crisis_response"  # 危机响应参考
+
+@dataclass
 class ReferenceConfig:
     """参考生成器配置"""
     reference_type: ReferenceType

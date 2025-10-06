@@ -1,0 +1,11 @@
+step,agent_id,performance_score,llm_response,decision_action,decision_confidence
+0,doctor_agent,0.9913767902208752,Response 0,action_0,0.8
+1,doctor_agent,0.915610255721453,Response 1,action_1,0.8
+2,doctor_agent,0.5851347323936462,Response 2,action_2,0.8
+3,doctor_agent,0.6129302032183819,Response 3,action_3,0.8
+4,doctor_agent,0.009680382847048419,Response 4,action_4,0.8
+5,doctor_agent,0.4276100347614097,Response 5,action_5,0.8
+6,doctor_agent,0.8916150592955003,Response 6,action_6,0.8
+7,doctor_agent,0.4638726646945497,Response 7,action_7,0.8
+8,doctor_agent,0.5576809011317062,Response 8,action_8,0.8
+9,doctor_agent,0.9391198221001619,Response 9,action_9,0.8

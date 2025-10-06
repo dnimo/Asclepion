@@ -1,0 +1,75 @@
+core_rules:
+- context:
+  - all
+  - medical
+  - crisis
+  description: 确保所有决策优先考虑患者安全
+  logic_function: _patient_safety_condition
+  name: 患者安全第一
+  priority: 1
+  rule_id: ETHIC_01
+  weight: 1.0
+- context:
+  - resource_allocation
+  - budget
+  description: 资源分配必须公平合理
+  logic_function: _fair_allocation_condition
+  name: 公平资源分配
+  priority: 2
+  rule_id: ETHIC_02
+  weight: 0.9
+- context:
+  - education
+  - training
+  description: 保障医学教育和人才培养
+  logic_function: _education_priority_condition
+  name: 医学教育优先
+  priority: 3
+  rule_id: ETHIC_03
+  weight: 0.8
+- context:
+  - financial
+  - budget
+  description: 确保医院财务健康可持续发展
+  logic_function: _financial_sustainability_condition
+  name: 财务可持续性
+  priority: 3
+  rule_id: ETHIC_04
+  weight: 0.7
+- context:
+  - crisis
+  - emergency
+  description: 提高系统对危机的适应和响应能力
+  logic_function: _crisis_adaptation_condition
+  name: 危机适应能力
+  priority: 2
+  rule_id: ETHIC_05
+  weight: 0.6
+- context:
+  - regulatory
+  - compliance
+  description: 确保所有操作符合法规要求
+  logic_function: _regulatory_compliance_condition
+  name: 法规合规性
+  priority: 2
+  rule_id: GOV_01
+  weight: 0.8
+- context:
+  - policy
+  - public
+  description: 决策必须服务于公共利益
+  logic_function: _public_interest_condition
+  name: 公共利益
+  priority: 1
+  rule_id: GOV_02
+  weight: 0.9
+- context:
+  - all
+  - system
+  description: 维护整个医疗系统的稳定性
+  logic_function: _system_stability_condition
+  name: 系统稳定性
+  priority: 2
+  rule_id: GOV_03
+  weight: 0.85
+government_rules: []

@@ -1,0 +1,53 @@
+MIT License
+
+Copyright (c) 2025 Kallipolis Medical Republic Governance System (Asclepion)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 🏥 Kallipolis医疗共和国治理系统特别声明
+
+本项目为学术研究和教育目的开发的医疗治理仿真系统，旨在探索基于人工智能和博弈论的医疗治理模式。
+
+### 使用限制
+
+1. **仅供研究使用**: 本系统仅用于学术研究、教育演示和概念验证，不得用于实际医疗决策。
+
+2. **非医疗建议**: 系统生成的所有决策和建议仅为仿真结果，不构成医疗建议或治疗方案。
+
+3. **数据隐私**: 使用者应确保不在系统中输入真实的患者数据或敏感医疗信息。
+
+4. **合规责任**: 在任何司法管辖区使用本软件时，用户有责任确保符合当地法律法规。
+
+### 免责声明
+
+- 作者不对因使用本软件而产生的任何直接或间接损失承担责任
+- 本软件不保证在所有环境下的稳定性和准确性
+- 用户在使用前应充分理解系统的局限性和适用范围
+
+### 引用要求
+
+如果您在学术研究中使用了本项目，请按以下格式引用：
+
+```
+Kallipolis Medical Republic Governance System (Asclepion). (2025). 
+A Multi-Agent Game Theory Based Hospital Governance Simulation Platform. 
+GitHub. https://github.com/dnimo/Asclepion
+```

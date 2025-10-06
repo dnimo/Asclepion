@@ -1,1 +1,272 @@
+# 🏥 Kallipolis医疗共和国治理系统 - Git忽略规则
+
+# ==============================================================================
+# Python相关
+# ==============================================================================
+
+# 字节码文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 分发/打包
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 单元测试和覆盖率
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_meta
+
+# 环境变量
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ==============================================================================
+# 机器学习和AI模型
+# ==============================================================================
+
+# 训练好的模型
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.onnx
+
+# TensorBoard日志
+logs/
+runs/
+tensorboard_logs/
+
+# MLflow
+mlruns/
+.mlflow/
+
+# ==============================================================================
+# 仿真和导出数据
+# ==============================================================================
+
+# 仿真输出数据
+/comprehensive_export/
+comprehensive_export/*.csv
+comprehensive_export/*.json
+comprehensive_export/*.db
+comprehensive_export/*.pkl
+test_export/*.csv
+test_export/*.json
+simulation_outputs/
+export_data/
+
+# 临时仿真文件
+*.tmp
+*.temp
+simulation_cache/
+temp_results/
+
+# 配置备份文件
+config/*.bak
+config/*~
+config/*.backup
+
+# ==============================================================================
+# 系统文件
+# ==============================================================================
+
+# macOS
 /.DS_Store
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================================================
+# 开发工具和IDE
+# ==============================================================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Vim
+*.swp
+*.swo
+
+# ==============================================================================
+# 日志文件
+# ==============================================================================
+
+# 应用日志
+*.log
+logs/
+log/
+*.log.*
+logfile
+logfiles/
+
+# ==============================================================================
+# 安全和密钥文件
+# ==============================================================================
+
+# API密钥和配置
+.env.local
+.env.production
+.env.development
+secrets.json
+api_keys.json
+credentials.json
+private_key.pem
+*.key
+*.pem
+*.crt
+*.cert
+
+# ==============================================================================
+# 缓存和临时文件
+# ==============================================================================
+
+# 应用缓存
+cache/
+.cache/
+tmp/
+temp/
+*.cache
+
+# 网络缓存
+.requests-cache.sqlite
+
+# ==============================================================================
+# 数据库文件
+# ==============================================================================
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ==============================================================================
+# 特定于Kallipolis项目的忽略规则
+# ==============================================================================
+
+# 仿真会话记录
+simulation_sessions/
+session_*.json
+parliament_records/
+
+# 智能体状态快照
+agent_snapshots/
+agent_state_*.pkl
+
+# 实验结果
+experiments/
+experiment_*.json
+results_*/
+
+# 用户上传文件
+uploads/
+user_data/
+
+# 系统生成的图表
+charts/
+plots/
+visualization_output/
+
+# WebSocket连接日志
+websocket_logs/
+connection_*.log
+
+# 性能监控数据
+monitoring/
+metrics/
+performance_*.json
+
+# 特殊配置文件（包含敏感信息）
+config/local_settings.yaml
+config/production_config.yaml
+config/api_config.yaml
+
+# ==============================================================================
+# 保留规则说明
+# ==============================================================================
+
+# 保留重要的空目录
+!comprehensive_export/.gitkeep
+!test_export/.gitkeep

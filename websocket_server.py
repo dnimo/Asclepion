@@ -63,24 +63,31 @@ class HospitalSimulationServer:
         self.simulator = None
         self.simulation_task = None  # 异步仿真任务
         
-        # 16维系统状态指标（统一定义）
+        # 16维系统状态指标（与state_space.py完全一致）
         self.performance_metrics = {
-            'bed_utilization': 0.7,           # 床位占用率
-            'equipment_utilization': 0.8,     # 设备利用率
-            'staff_utilization': 0.6,         # 人员利用率
-            'medication_level': 0.9,          # 药品库存水平
-            'cash_reserves': 0.8,             # 现金储备
-            'profit_margin': 0.1,             # 运营利润率
-            'debt_ratio': 0.3,                # 资产负债率
-            'cost_efficiency': 0.75,          # 成本效率
-            'patient_satisfaction': 0.85,     # 患者满意度
-            'treatment_success': 0.9,         # 治疗成功率
-            'average_wait_time': 0.2,         # 平均等待时间
-            'safety_index': 0.95,             # 医疗安全指数
-            'ethics_score': 0.8,              # 伦理合规评分
-            'fairness_index': 0.85,           # 资源公平性指数
-            'learning_efficiency': 0.7,       # 学习效率
-            'knowledge_transfer': 0.8         # 知识传递效率
+            # 物理资源状态 (x₁-x₄)
+            'bed_occupancy_rate': 0.7,                    # 病床占用率
+            'medical_equipment_utilization': 0.8,        # 医疗设备利用率
+            'staff_utilization_rate': 0.6,               # 人员利用率
+            'medication_inventory_level': 0.9,           # 药品库存水平
+            
+            # 财务状态 (x₅-x₈)
+            'cash_reserve_ratio': 0.8,                   # 现金储备率
+            'operating_margin': 0.1,                     # 运营利润率
+            'debt_to_asset_ratio': 0.3,                  # 资产负债率
+            'cost_efficiency_index': 0.75,               # 成本效率指数
+            
+            # 服务质量状态 (x₉-x₁₂)
+            'patient_satisfaction_index': 0.85,          # 患者满意度指数
+            'treatment_success_rate': 0.9,               # 治疗成功率
+            'average_wait_time': 0.2,                    # 平均等待时间
+            'medical_safety_index': 0.95,                # 医疗安全指数
+            
+            # 教育伦理状态 (x₁₃-x₁₆)
+            'ethical_compliance_score': 0.8,             # 伦理合规得分
+            'resource_allocation_fairness': 0.85,        # 资源分配公平性
+            'intern_learning_efficiency': 0.7,           # 实习生学习效率
+            'knowledge_transfer_rate': 0.8               # 知识传递率
         }
         
         # 基础规则系统（用于fallback）
@@ -221,24 +228,31 @@ class HospitalSimulationServer:
         self.simulator = None
         self.simulation_task = None
         
-        # 重置性能指标
+        # 重置性能指标（与state_space.py完全一致）
         self.performance_metrics.update({
-            'bed_utilization': 0.7,
-            'equipment_utilization': 0.8,
-            'staff_utilization': 0.6,
-            'medication_level': 0.9,
-            'cash_reserves': 0.8,
-            'profit_margin': 0.1,
-            'debt_ratio': 0.3,
-            'cost_efficiency': 0.75,
-            'patient_satisfaction': 0.85,
-            'treatment_success': 0.9,
-            'average_wait_time': 0.2,
-            'safety_index': 0.95,
-            'ethics_score': 0.8,
-            'fairness_index': 0.85,
-            'learning_efficiency': 0.7,
-            'knowledge_transfer': 0.8
+            # 物理资源状态 (x₁-x₄)
+            'bed_occupancy_rate': 0.7,                    # 病床占用率
+            'medical_equipment_utilization': 0.8,        # 医疗设备利用率
+            'staff_utilization_rate': 0.6,               # 人员利用率
+            'medication_inventory_level': 0.9,           # 药品库存水平
+            
+            # 财务状态 (x₅-x₈)
+            'cash_reserve_ratio': 0.8,                   # 现金储备率
+            'operating_margin': 0.1,                     # 运营利润率
+            'debt_to_asset_ratio': 0.3,                  # 资产负债率
+            'cost_efficiency_index': 0.75,               # 成本效率指数
+            
+            # 服务质量状态 (x₉-x₁₂)
+            'patient_satisfaction_index': 0.85,          # 患者满意度指数
+            'treatment_success_rate': 0.9,               # 治疗成功率
+            'average_wait_time': 0.2,                    # 平均等待时间
+            'medical_safety_index': 0.95,                # 医疗安全指数
+            
+            # 教育伦理状态 (x₁₃-x₁₆)
+            'ethical_compliance_score': 0.8,             # 伦理合规得分
+            'resource_allocation_fairness': 0.85,        # 资源分配公平性
+            'intern_learning_efficiency': 0.7,           # 实习生学习效率
+            'knowledge_transfer_rate': 0.8               # 知识传递率
         })
         
         logger.info("🔄 仿真已重置")
@@ -347,12 +361,12 @@ class HospitalSimulationServer:
             enable_llm_integration=True,
             enable_holy_code=True,
             enable_crises=True,
-            enable_behavior_models=True,
+            enable_reward_control=True,
             meeting_interval=7  # 议会每7步召开一次
         )
         self.simulator = KallipolisSimulator(config)
         
-        logger.info(f"✅ Simulator初始化完成 - 智能体数量: {len(self.simulator.agent_objects)}")
+        logger.info(f"✅ Simulator初始化完成 - 智能体数量: {len(self.simulator.agent_registry.get_all_agents()) if self.simulator.agent_registry else 0}")
         
         # 初始化完成后推送真实的神圣法典规则
         await self._push_real_holy_code_rules()
@@ -591,32 +605,36 @@ class HospitalSimulationServer:
             if 'system_state' in step_data:
                 system_state = step_data['system_state']
                 if isinstance(system_state, dict):
-                    # 直接映射完整的系统状态
+                    # 映射仿真器状态到16维状态空间
                     state_mapping = {
-                        'medical_quality': system_state.get('medical_quality', 0.9),
-                        'patient_safety': system_state.get('patient_safety', 0.95),
-                        'care_quality': system_state.get('care_quality', 0.9),
-                        'resource_adequacy': system_state.get('resource_adequacy', 0.7),
-                        'resource_utilization': system_state.get('resource_utilization', 0.7),
-                        'resource_access': system_state.get('resource_access', 0.8),
-                        'education_quality': system_state.get('education_quality', 0.75),
-                        'training_hours': system_state.get('training_hours', 37.5),
-                        'mentorship_availability': system_state.get('mentorship_availability', 0.8),
-                        'career_development': system_state.get('career_development', 0.6),
-                        'financial_health': system_state.get('financial_health', 0.65),
-                        'cost_efficiency': system_state.get('cost_efficiency', 0.75),
-                        'revenue_growth': system_state.get('revenue_growth', 0.65),
-                        'patient_satisfaction': system_state.get('patient_satisfaction', 0.85),
-                        'accessibility': system_state.get('accessibility', 0.8),
-                        'waiting_times': system_state.get('waiting_times', 0.3)
+                        # 物理资源状态 (x₁-x₄)
+                        'bed_occupancy_rate': system_state.get('medical_resource_utilization', 0.7),
+                        'medical_equipment_utilization': system_state.get('operational_efficiency', 0.8),
+                        'staff_utilization_rate': system_state.get('staff_workload_balance', 0.6),
+                        'medication_inventory_level': system_state.get('crisis_response_capability', 0.9),
+                        
+                        # 财务状态 (x₅-x₈)
+                        'cash_reserve_ratio': system_state.get('financial_indicator', 0.8),
+                        'operating_margin': system_state.get('financial_indicator', 0.1),
+                        'debt_to_asset_ratio': 0.3,  # 默认值，如果仿真器没有提供
+                        'cost_efficiency_index': system_state.get('operational_efficiency', 0.75),
+                        
+                        # 服务质量状态 (x₉-x₁₂)
+                        'patient_satisfaction_index': system_state.get('patient_satisfaction', 0.85),
+                        'treatment_success_rate': system_state.get('care_quality_index', 0.9),
+                        'average_wait_time': system_state.get('patient_waiting_time', 0.2),
+                        'medical_safety_index': system_state.get('safety_incident_rate', 0.95),
+                        
+                        # 教育伦理状态 (x₁₃-x₁₆)
+                        'ethical_compliance_score': system_state.get('ethical_compliance', 0.8),
+                        'resource_allocation_fairness': system_state.get('regulatory_compliance_score', 0.85),
+                        'intern_learning_efficiency': system_state.get('education_training_quality', 0.7),
+                        'knowledge_transfer_rate': system_state.get('professional_development', 0.8)
                     }
                     
                     # 更新性能指标
                     for metric, value in state_mapping.items():
-                        if metric in ['training_hours']:
-                            # 特殊处理训练时间
-                            self.performance_metrics[metric] = min(float(value) / 60, 1.0)
-                        else:
+                        if metric in self.performance_metrics:
                             self.performance_metrics[metric] = float(value)
                 
                 await self.broadcast({

@@ -1,0 +1,31 @@
+{
+  "llm_provider": "mock",
+  "llm_preset": "mock",
+  "enable_llm_generation": true,
+  "api_key_env_vars": {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY"
+  },
+  "registry_status": {
+    "total_agents": 5,
+    "registered_roles": [
+      "doctors",
+      "interns",
+      "patients",
+      "accountants",
+      "government"
+    ],
+    "llm_provider": "mock",
+    "llm_preset": "mock",
+    "api_status": {
+      "openai": false,
+      "anthropic": false
+    },
+    "llm_enabled": true,
+    "generators_count": 5
+  },
+  "api_status": {
+    "openai": false,
+    "anthropic": false
+  }
+}

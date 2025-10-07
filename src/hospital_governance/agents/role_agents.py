@@ -18,8 +18,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 import logging
 
-from .role_agents_old import ParliamentMemberAgent
-
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -171,6 +169,10 @@ class RoleAgent(ABC):
         self.behavior_model = None
         self.learning_model = None
         self.llm_generator = None
+        
+        # LLM集成状态
+        self._llm_enabled = False
+        self._llm_fallback_enabled = True
         
         # 历史记录
         self.action_history = []

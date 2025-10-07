@@ -270,19 +270,45 @@ class RewardControllerFactory:
                 if hasattr(base_config, key):
                     setattr(base_config, key, value)
         
-        # 根据角色创建特定控制器
-        if role == 'doctor':
-            return DoctorRewardController(base_config, agent)
-        elif role == 'intern':
-            return InternRewardController(base_config, agent)
-        elif role == 'patient':
-            return PatientRewardController(base_config, agent)
-        elif role == 'accountant':
-            return AccountantRewardController(base_config, agent)
-        elif role == 'government':
-            return GovernmentRewardController(base_config, agent)
-        else:
-            raise ValueError(f"Unknown role: {role}")
+        # 动态导入角色特定控制器类以避免循环导入
+        try:
+            from .role_specific_reward_controllers import (
+                DoctorRewardController, InternRewardController, PatientRewardController,
+                AccountantRewardController, GovernmentRewardController
+            )
+            
+            # 根据角色创建特定控制器
+            if role == 'doctor':
+                return DoctorRewardController(base_config, agent)
+            elif role == 'intern':
+                return InternRewardController(base_config, agent)
+            elif role == 'patient':
+                return PatientRewardController(base_config, agent)
+            elif role == 'accountant':
+                return AccountantRewardController(base_config, agent)
+            elif role == 'government':
+                return GovernmentRewardController(base_config, agent)
+            else:
+                raise ValueError(f"Unknown role: {role}")
+                
+        except ImportError as e:
+            logger.warning(f"⚠️ 无法导入角色特定控制器: {e}")
+            # 返回基础控制器作为降级
+            return BaseRewardController(base_config, agent)
 
 
-# 角色特定控制器实现将在后续文件中定义
+class BaseRewardController(RewardBasedController):
+    """基础奖励控制器，用作降级选项"""
+    
+    def _compute_role_specific_adjustment(self, 
+                                        current_state: SystemState,
+                                        target_state: SystemState,
+                                        context: Dict[str, Any]) -> float:
+        """基础奖励调节实现"""
+        # 简单的性能差异调节
+        if hasattr(current_state, 'to_vector') and hasattr(target_state, 'to_vector'):
+            current_vec = current_state.to_vector()
+            target_vec = target_state.to_vector()
+            error = np.mean(target_vec - current_vec)
+            return error * 0.1
+        return 0.0

@@ -37,7 +37,7 @@ SYSTEM_INFO = {
 
 # Agents模块
 from .agents.role_agents import (RoleAgent, RoleManager, 
-                                ParliamentMemberAgent, DoctorAgent, InternAgent,
+                                DoctorAgent, InternAgent,
                                 PatientAgent, AccountantAgent, GovernmentAgent)
 from .agents.behavior_models import (BaseBehaviorModel, RationalBehaviorModel,
                                    BoundedRationalBehaviorModel, EmotionalBehaviorModel,

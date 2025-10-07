@@ -4,7 +4,7 @@
 """
 
 from .role_agents import (RoleAgent, RoleManager, 
-                         ParliamentMemberAgent, DoctorAgent, InternAgent,
+                         DoctorAgent, InternAgent,
                          PatientAgent, AccountantAgent, GovernmentAgent)
 from .behavior_models import (
     # 新的行为模型系统
@@ -23,10 +23,14 @@ from .llm_action_generator import (
 from .interaction_engine import (ExperienceReplay,
                                 KallipolisInteractionEngine, CrisisScenario)
 from .multi_agent_coordinator import (MultiAgentInteractionEngine, InteractionConfig)
+from .agent_registry import (
+    AgentRegistry, AgentRegistryConfig, LLMProviderType,
+    create_agent_registry, get_global_agent_registry, reset_global_registry
+)
 
 __all__ = [
     # 角色智能体
-    'RoleAgent', 'RoleManager', 'ParliamentMemberAgent', 
+    'RoleAgent', 'RoleManager', 
     'DoctorAgent', 'InternAgent', 'PatientAgent', 'AccountantAgent', 'GovernmentAgent',
     
     # 行为模型系统
@@ -45,4 +49,7 @@ __all__ = [
     'ExperienceReplay', 'KallipolisInteractionEngine',
     'CrisisScenario', 'MultiAgentInteractionEngine', 'InteractionConfig',
     
+    # 智能体注册中心
+    'AgentRegistry', 'AgentRegistryConfig', 'LLMProviderType',
+    'create_agent_registry', 'get_global_agent_registry', 'reset_global_registry',
 ]

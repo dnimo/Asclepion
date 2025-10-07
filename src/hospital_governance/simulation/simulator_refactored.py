@@ -38,15 +38,6 @@ except ImportError as e:
     logger.warning(f"Core数学模块导入失败: {e}")
     HAS_CORE_MATH = False
 
-# 导入场景运行器
-try:
-    from .scenario_runner import ScenarioRunner, CrisisScenario, ScenarioType
-    HAS_SCENARIO_RUNNER = True
-except ImportError as e:
-    logger = logging.getLogger(__name__)
-    logger.warning(f"场景运行器导入失败: {e}")
-    HAS_SCENARIO_RUNNER = False
-
 # 导入控制系统
 try:
     from ..control.distributed_reward_control import (
@@ -138,7 +129,6 @@ class KallipolisSimulator:
         self.core_system: Optional[KallipolisMedicalSystem] = None
         self.system_dynamics: Optional[SystemDynamics] = None
         self.state_space: Optional[StateSpace] = None
-        self.scenario_runner: Optional[ScenarioRunner] = None  # 添加场景运行器
         
         # 初始化核心组件
         self._initialize_components()
@@ -162,9 +152,6 @@ class KallipolisSimulator:
             
             # 5. 验证组件集成
             self._validate_component_integration()
-            
-            # 6. 初始化场景运行器
-            self._initialize_scenario_runner()
             
             logger.info("✅ 所有核心组件初始化完成")
             
@@ -291,33 +278,6 @@ class KallipolisSimulator:
         except Exception as e:
             logger.error(f"❌ 神圣法典管理器初始化失败: {e}")
             self.holy_code_manager = None
-    
-    def _initialize_scenario_runner(self):
-        """初始化场景运行器"""
-        if not HAS_SCENARIO_RUNNER:
-            logger.warning("⚠️ ScenarioRunner模块未可用")
-            return
-            
-        try:
-            from pathlib import Path
-            self.scenario_runner = ScenarioRunner(self)
-            
-            # 尝试加载默认场景配置
-            scenario_config_path = Path(__file__).parent.parent.parent.parent / "config" / "simulation_scenarios.yaml"
-            if scenario_config_path.exists():
-                self.scenario_runner.load_scenarios_from_yaml(str(scenario_config_path))
-                logger.info(f"✅ 从 {scenario_config_path} 加载场景配置")
-            else:
-                logger.info("📋 使用内置预设场景")
-                # 创建一些默认场景
-                presets = self.scenario_runner.create_preset_scenarios()
-                self.scenario_runner.scenarios = list(presets.values())
-            
-            logger.info("✅ 场景运行器初始化完成")
-            
-        except Exception as e:
-            logger.error(f"❌ 场景运行器初始化失败: {e}")
-            self.scenario_runner = None
     
     def _validate_component_integration(self):
         """验证组件集成状态"""
@@ -707,64 +667,20 @@ class KallipolisSimulator:
         """处理危机事件"""
         crises = []
         
-        # 优先使用ScenarioRunner检查是否有预定义的危机事件
-        if self.scenario_runner:
-            try:
-                self.scenario_runner.check_and_insert_event(self.current_step)
-            except Exception as e:
-                logger.warning(f"⚠️ 场景运行器检查事件失败: {e}")
-        
-        # 随机生成危机事件
         if np.random.random() < self.config.crisis_probability:
-            crisis_types = {
-                'pandemic': '疫情爆发，医院面临巨大压力',
-                'funding_cut': '资金削减，需要优化资源分配',
-                'staff_shortage': '人员短缺，影响医疗服务质量'
-            }
-            
-            crisis_type = np.random.choice(list(crisis_types.keys()))
             crisis = {
-                'type': crisis_type,
+                'type': np.random.choice(['pandemic', 'funding_cut', 'staff_shortage']),
                 'severity': np.random.uniform(0.2, 0.8),
                 'duration': np.random.randint(5, 15),
-                'start_step': self.current_step,
-                'description': crisis_types[crisis_type]  # 添加描述字段
+                'start_step': self.current_step
             }
             
             self.history['crises'].append(crisis)
             crises.append(crisis)
             
-            logger.info(f"🚨 危机事件: {crisis['type']} - {crisis['description']} (严重程度: {crisis['severity']:.2f})")
+            logger.info(f"🚨 危机事件: {crisis['type']} (严重程度: {crisis['severity']:.2f})")
         
         return crises
-    
-    def _apply_crisis_effects(self, crisis_data: Dict[str, Any]):
-        """应用危机效果到系统状态"""
-        try:
-            crisis_type = crisis_data.get('type', 'unknown')
-            severity = crisis_data.get('severity', 0.0)
-            affected_metrics = crisis_data.get('affected_metrics', [])
-            
-            logger.info(f"🚨 应用危机效果: {crisis_type} (严重程度: {severity:.2f})")
-            
-            # 根据危机类型调整系统状态
-            if hasattr(self, 'core_system') and self.core_system:
-                current_state = self.core_system.get_current_state()
-                
-                # 应用危机影响
-                for metric in affected_metrics:
-                    if hasattr(current_state, metric):
-                        current_value = getattr(current_state, metric)
-                        impact = severity * 0.3  # 最多影响30%
-                        new_value = max(0.1, current_value - impact)
-                        setattr(current_state, metric, new_value)
-                        logger.debug(f"  📉 {metric}: {current_value:.3f} → {new_value:.3f}")
-                
-                # 更新系统状态
-                self.core_system.update_state(current_state)
-            
-        except Exception as e:
-            logger.error(f"❌ 应用危机效果失败: {e}")
     
     def _calculate_performance_metrics(self, step_data: Dict[str, Any]) -> Dict[str, float]:
         """计算性能指标"""

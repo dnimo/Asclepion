@@ -9,7 +9,7 @@ import json
 import os
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, asdict
-from .llm_action_generator import BaseLLMProvider, LLMConfig
+from .llm_action_generator import BaseLLMProvider, LLMConfig, MockLLMProvider
 
 @dataclass
 class APIConfig:
@@ -306,7 +306,7 @@ def create_llm_provider(provider_type: str, config: LLMConfig) -> BaseLLMProvide
         'openai': OpenAIProvider,
         'anthropic': AnthropicProvider,
         'local': LocalModelProvider,
-        'mock': lambda cfg: __import__('hospital_governance.agents.llm_action_generator', fromlist=['MockLLMProvider']).MockLLMProvider(cfg)
+        'mock': lambda cfg: MockLLMProvider(cfg)
     }
     
     if provider_type not in providers:

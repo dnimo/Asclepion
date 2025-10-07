@@ -1,6 +1,0 @@
-step,agent_id,performance_score,llm_response,decision_action,decision_tasks,decision_priority
-0,hospital_administrator,0.6107241683910015,管理员执行日常管理任务,routine_management,"['scheduling', 'reporting', 'coordination']",normal
-1,hospital_administrator,0.6386404692997861,管理员执行日常管理任务,routine_management,"['scheduling', 'reporting', 'coordination']",normal
-2,hospital_administrator,0.7643162122592387,管理员执行日常管理任务,routine_management,"['scheduling', 'reporting', 'coordination']",normal
-3,hospital_administrator,0.9004794776871079,管理员执行日常管理任务,routine_management,"['scheduling', 'reporting', 'coordination']",normal
-4,hospital_administrator,0.642119027253348,管理员执行日常管理任务,routine_management,"['scheduling', 'reporting', 'coordination']",normal

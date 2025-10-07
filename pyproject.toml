@@ -1,0 +1,606 @@
+# 🏥 Kallipolis医疗共和国治理系统 (Asclepion) - 项目配置
+# 基于多智能体博弈论的医院治理实时监控仿真平台
+
+[build-system]
+requires = [
+    "setuptools>=65.0.0",
+    "wheel>=0.38.0",
+    "build>=0.8.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kallipolis-asclepion"
+version = "1.0.0"
+description = "🏥 Kallipolis医疗共和国治理系统 - 基于多智能体博弈论的医院治理仿真平台"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "dnimo", email = "dnimo@example.com"}
+]
+maintainers = [
+    {name = "Asclepion Team", email = "asclepion-team@example.com"}
+]
+keywords = [
+    "医疗治理", "多智能体系统", "博弈论", "强化学习", "WebSocket", 
+    "仿真平台", "人工智能", "医院管理", "决策支持", "实时监控",
+    "healthcare", "multi-agent", "game-theory", "reinforcement-learning",
+    "simulation", "artificial-intelligence", "hospital-management", "LLM",
+    "MADDPG", "collaborative-intelligence", "democratic-governance"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research", 
+    "Intended Audience :: Education",
+    "Intended Audience :: Information Technology",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Medical Science Apps",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9", 
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Environment :: Web Environment",
+    "Environment :: Console",
+    "Framework :: AsyncIO",
+    "Natural Language :: Chinese (Simplified)",
+    "Natural Language :: English",
+]
+requires-python = ">=3.8,<4.0"
+
+# 核心依赖
+dependencies = [
+    # 数值计算与科学计算
+    "numpy>=1.21.0,<2.0.0",
+    "scipy>=1.7.0,<2.0.0", 
+    "pandas>=1.3.0,<3.0.0",
+    
+    # 机器学习基础
+    "scikit-learn>=1.0.0,<2.0.0",
+    
+    # 数据可视化
+    "matplotlib>=3.5.0,<4.0.0",
+    "plotly>=5.0.0,<6.0.0",
+    "seaborn>=0.11.0,<1.0.0",
+    
+    # Web服务与通信
+    "websockets>=10.0,<12.0",
+    "aiohttp>=3.8.0,<4.0.0",
+    "aiofiles>=0.8.0,<1.0.0",
+    
+    # 配置文件处理
+    "pyyaml>=6.0,<7.0.0",
+    "toml>=0.10.0,<1.0.0",
+    
+    # 日志与监控
+    "loguru>=0.6.0,<1.0.0",
+    "psutil>=5.8.0,<6.0.0",
+    
+    # 系统工具
+    "python-dateutil>=2.8.0",
+    "requests>=2.25.0,<3.0.0",
+    "python-dotenv>=0.19.0,<2.0.0",
+    
+    # 序列化与压缩
+    "joblib>=1.1.0,<2.0.0",
+]
+
+# 可选依赖组
+[project.optional-dependencies]
+# AI与机器学习增强包
+ai = [
+    "torch>=1.12.0,<3.0.0",
+    "stable-baselines3>=1.6.0",
+    "transformers>=4.20.0,<5.0.0",
+    "tokenizers>=0.13.0,<1.0.0",
+    "openai>=1.0.0,<2.0.0",
+    "nltk>=3.7,<4.0.0",
+    "spacy>=3.4.0,<4.0.0",
+]
+
+# 开发工具包
+dev = [
+    "pytest>=6.0.0,<8.0.0",
+    "pytest-asyncio>=0.20.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.6.0",
+    "black>=22.0.0,<25.0.0",
+    "isort>=5.10.0,<6.0.0", 
+    "flake8>=4.0.0,<7.0.0",
+    "mypy>=0.910,<2.0.0",
+    "bandit>=1.7.0,<2.0.0",
+    "pre-commit>=2.15.0,<4.0.0",
+    "autopep8>=1.6.0,<3.0.0",
+]
+
+# 文档生成
+docs = [
+    "sphinx>=4.0.0,<8.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
+    "sphinx-copybutton>=0.5.0",
+]
+
+# Jupyter环境支持
+jupyter = [
+    "jupyter>=1.0.0,<2.0.0",
+    "ipywidgets>=7.6.0,<9.0.0",
+    "notebook>=6.4.0,<8.0.0",
+    "jupyterlab>=3.0.0,<5.0.0",
+]
+
+# Web扩展功能
+web = [
+    "flask>=2.0.0,<3.0.0",
+    "flask-socketio>=5.0.0,<6.0.0",
+    "dash>=2.0.0,<3.0.0",
+    "fastapi>=0.70.0,<1.0.0",
+    "uvicorn>=0.15.0,<1.0.0",
+]
+
+# 数据库支持
+database = [
+    "sqlalchemy>=1.4.0,<3.0.0",
+    "alembic>=1.7.0,<2.0.0",
+    "psycopg2-binary>=2.9.0,<3.0.0",
+    "redis>=4.0.0,<6.0.0",
+]
+
+# 性能优化
+performance = [
+    "numba>=0.56.0,<1.0.0",
+    "lz4>=3.1.0,<5.0.0",
+    "memory-profiler>=0.60.0",
+    "line-profiler>=3.5.0",
+]
+
+# GPU加速支持
+gpu = [
+    "cupy>=10.0.0,<13.0.0",
+]
+
+# 生产环境部署
+production = [
+    "gunicorn>=20.1.0,<22.0.0",
+    "supervisor>=4.2.0,<5.0.0",
+    "nginx-python>=0.3.0",
+    "prometheus-client>=0.14.0,<1.0.0",
+]
+
+# 安全增强
+security = [
+    "cryptography>=3.4.0,<42.0.0",
+    "bcrypt>=3.2.0,<5.0.0",
+    "pyjwt>=2.4.0,<3.0.0",
+    "certifi>=2021.10.8",
+]
+
+# 完整安装（包含所有可选功能）
+full = [
+    "kallipolis-asclepion[ai,dev,docs,jupyter,web,database,performance,security]"
+]
+
+# 最小生产环境
+minimal = [
+    "kallipolis-asclepion[ai,web,database]"
+]
+
+[project.urls]
+Homepage = "https://github.com/dnimo/Asclepion"
+Documentation = "https://github.com/dnimo/Asclepion/tree/main/docs"
+Repository = "https://github.com/dnimo/Asclepion.git"
+"Bug Tracker" = "https://github.com/dnimo/Asclepion/issues"
+"Feature Requests" = "https://github.com/dnimo/Asclepion/issues/new?template=feature_request.md"
+"Security Advisories" = "https://github.com/dnimo/Asclepion/security/advisories"
+Changelog = "https://github.com/dnimo/Asclepion/blob/main/CHANGELOG.md"
+Discussions = "https://github.com/dnimo/Asclepion/discussions"
+
+[project.scripts]
+kallipolis-server = "hospital_governance.main:main"
+kallipolis-demo = "hospital_governance.examples.demo:main"
+kallipolis-export = "hospital_governance.tools.export:main"
+kallipolis-train = "hospital_governance.training.maddpg:main"
+kallipolis-parliament = "hospital_governance.parliament.session:main"
+
+[project.gui-scripts]
+kallipolis-gui = "hospital_governance.gui.main:launch_gui"
+
+# ============================================================================
+# 工具配置
+# ============================================================================
+
+[tool.setuptools]
+# 包发现配置
+package-dir = {"" = "src"}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hospital_governance = [
+    "config/*.yaml",
+    "config/*.yml", 
+    "frontend/*.html",
+    "frontend/*.css",
+    "frontend/*.js",
+    "templates/*.html",
+    "static/*",
+    "data/*.json",
+    "models/*.pkl",
+    "schemas/*.json",
+]
+
+# ============================================================================
+# 代码质量工具配置
+# ============================================================================
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # 默认排除
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  # 项目特定排除
+  | migrations
+  | node_modules
+  | .pytest_cache
+  | test_export
+  | comprehensive_export
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+src_paths = ["src", "tests"]
+skip = [
+    ".git",
+    ".mypy_cache", 
+    ".pytest_cache",
+    "build",
+    "dist",
+    "migrations",
+    "test_export",
+    "comprehensive_export"
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "numpy.*",
+    "scipy.*", 
+    "pandas.*",
+    "matplotlib.*",
+    "plotly.*",
+    "sklearn.*",
+    "torch.*",
+    "stable_baselines3.*",
+    "transformers.*",
+    "openai.*",
+    "websockets.*",
+    "aiohttp.*",
+]
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 88
+max-complexity = 12
+extend-ignore = [
+    "E203",  # 与black冲突
+    "E501",  # 行长度由black处理
+    "W503",  # 与black冲突
+    "F401",  # 未使用的导入（允许在__init__.py中）
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".pytest_cache",
+    ".mypy_cache",
+    "migrations",
+    "test_export",
+    "comprehensive_export",
+]
+per-file-ignores = [
+    "__init__.py:F401",
+    "test_*.py:S101",
+]
+
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    "test_export", 
+    "comprehensive_export",
+    ".pytest_cache",
+]
+skips = [
+    "B101",  # assert语句在测试中是安全的
+    "B601",  # shell注入（在受控环境中使用）
+]
+
+# ============================================================================
+# 测试配置
+# ============================================================================
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config", 
+    "--cov=src/hospital_governance",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=75",
+]
+testpaths = [
+    "tests",
+    "src/hospital_governance/tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+]
+python_classes = [
+    "Test*",
+]
+python_functions = [
+    "test_*",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "ai: marks tests that require AI models",
+    "gpu: marks tests that require GPU",
+    "network: marks tests that require network access",
+    "database: marks tests that require database",
+    "webapp: marks tests for web application",
+]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/hospital_governance"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/venv/*",
+    "*/virtualenv/*",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
+show_missing = true
+precision = 2
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# ============================================================================
+# Pre-commit 配置
+# ============================================================================
+
+[tool.pre-commit]
+default_stages = ["commit", "push"]
+default_language_version = {python = "python3.9"}
+
+# ============================================================================
+# 依赖管理配置
+# ============================================================================
+
+[tool.pip-tools]
+generate-hashes = true
+upgrade = true
+strip-extras = true
+
+# ============================================================================
+# 文档配置
+# ============================================================================
+
+[tool.sphinx]
+source-dir = "docs"
+build-dir = "docs/_build"
+
+# ============================================================================
+# 性能分析配置
+# ============================================================================
+
+[tool.profile]
+sort_by = ["cumulative", "time"]
+strip_dirs = true
+
+# ============================================================================
+# 项目元数据
+# ============================================================================
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hospital_governance"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests", 
+    "/docs",
+    "/config",
+    "/frontend",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml",
+    "/requirements.txt",
+]
+exclude = [
+    "/.git",
+    "/__pycache__",
+    "/.pytest_cache",
+    "/.mypy_cache",
+    "/build",
+    "/dist",
+    "/.env*",
+    "/test_export",
+    "/comprehensive_export",
+    "/models/*.pkl",
+    "/models/*.pth",
+]
+
+# ============================================================================
+# 环境配置
+# ============================================================================
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=src/hospital_governance {args:tests}"
+cov-report = "coverage report"
+cov-html = "coverage html"
+
+[tool.hatch.envs.dev]
+dependencies = [
+    "kallipolis-asclepion[dev]",
+]
+
+[tool.hatch.envs.dev.scripts]
+lint = "flake8 src tests"
+format = "black src tests"
+sort-imports = "isort src tests"
+type-check = "mypy src"
+security-check = "bandit -r src"
+all-checks = ["format", "sort-imports", "lint", "type-check", "security-check", "test"]
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "kallipolis-asclepion[docs]",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build -b html docs docs/_build/html"
+serve = "python -m http.server 8000 --directory docs/_build/html"
+clean = "rm -rf docs/_build"
+
+# ============================================================================
+# 发布配置
+# ============================================================================
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/hospital_governance/_version.py"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs.version]
+raw-options = { local_scheme = "no-local-version" }
+
+# ============================================================================
+# 平台特定配置
+# ============================================================================
+
+[tool.cibuildwheel]
+build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*"]
+skip = ["*-win32", "*-manylinux_i686", "*-musllinux_*"]
+test-requires = ["pytest", "pytest-asyncio"]
+test-command = "pytest {project}/tests"
+
+[tool.cibuildwheel.linux]
+before-all = "yum install -y gcc gcc-c++ || apt-get update && apt-get install -y gcc g++"
+
+[tool.cibuildwheel.macos]
+before-all = "brew install gcc || true"
+
+[tool.cibuildwheel.windows] 
+before-all = "choco install visualstudio2019buildtools --package-parameters \"--add Microsoft.VisualStudio.Workload.VCTools\""
+
+# ============================================================================
+# IDE 配置提示
+# ============================================================================
+
+# VS Code 设置建议:
+# {
+#   "python.defaultInterpreterPath": "./venv/bin/python",
+#   "python.linting.enabled": true,
+#   "python.linting.flake8Enabled": true, 
+#   "python.formatting.provider": "black",
+#   "python.sortImports.args": ["--profile", "black"],
+#   "editor.formatOnSave": true,
+#   "editor.codeActionsOnSave": {
+#     "source.organizeImports": true
+#   }
+# }
+
+# PyCharm 设置建议:
+# - File -> Settings -> Tools -> Black -> 启用格式化
+# - File -> Settings -> Tools -> isort -> 启用导入排序  
+# - File -> Settings -> Editor -> Inspections -> Python -> 启用类型检查

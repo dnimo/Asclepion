@@ -1,2 +1,0 @@
-simulation_id,start_time,end_time,duration_steps,llm_provider,system_parameters,performance_metrics
-test_sim_001,2025-10-06T17:38:25.328031,2025-10-06T17:38:25.328035,10,mock,"{""param1"": 1.0, ""param2"": ""test""}","{""stability"": 0.95, ""efficiency"": 0.88}"

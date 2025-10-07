@@ -1,2 +1,0 @@
-simulation_id,start_time,end_time,duration_steps,llm_provider,system_parameters,performance_metrics
-hospital_governance_demo,2025-10-06T17:43:35.893581,2025-10-06T17:43:35.904354,25,gpt-4,"{""hospital_capacity"": 500, ""num_doctors"": 20, ""num_nurses"": 50, ""emergency_threshold"": 0.3, ""efficiency_weight"": 0.6, ""safety_weight"": 0.4}","{""patient_satisfaction"": 0.85, ""resource_efficiency"": 0.78, ""safety_score"": 0.92, ""response_time"": 15.2}"

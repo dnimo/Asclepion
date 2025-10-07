@@ -39,10 +39,7 @@ SYSTEM_INFO = {
 from .agents.role_agents import (RoleAgent, RoleManager, 
                                 DoctorAgent, InternAgent,
                                 PatientAgent, AccountantAgent, GovernmentAgent)
-from .agents.behavior_models import (BaseBehaviorModel, RationalBehaviorModel,
-                                   BoundedRationalBehaviorModel, EmotionalBehaviorModel,
-                                   SocialBehaviorModel, AdaptiveBehaviorModel,
-                                   BehaviorModelFactory, BehaviorModelManager)
+# behavior_models removed - using MADDPG + LLM architecture instead
 from .agents.learning_models import (LearningModel, MADDPGModel, DQNModel,
                                    BaseNetwork, Actor, Critic)
 from .agents.llm_action_generator import LLMActionGenerator
@@ -90,7 +87,7 @@ __all__ = [
     # 行为模型
     'BaseBehaviorModel', 'RationalBehaviorModel', 'BoundedRationalBehaviorModel',
     'EmotionalBehaviorModel', 'SocialBehaviorModel', 'AdaptiveBehaviorModel',
-    'BehaviorModelFactory', 'BehaviorModelManager',
+    # 'BehaviorModelFactory', 'BehaviorModelManager',  # Removed
     
     # 学习模型
     'LearningModel', 'MADDPGModel', 'DQNModel', 'BaseNetwork',

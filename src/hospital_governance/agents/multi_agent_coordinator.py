@@ -11,7 +11,6 @@ from dataclasses import dataclass
 import copy
 
 from .role_agents import RoleAgent, RoleManager
-from .behavior_models import BehaviorModelManager
 from .learning_models import MADDPGModel
 from .llm_action_generator import LLMActionGenerator, LLMConfig
 
@@ -19,7 +18,7 @@ from .llm_action_generator import LLMActionGenerator, LLMConfig
 @dataclass
 class InteractionConfig:
     """交互配置"""
-    use_behavior_models: bool = True
+    use_behavior_models: bool = False
     use_learning_models: bool = True
     use_llm_generation: bool = False
     conflict_resolution: str = "negotiation"  # "negotiation", "voting", "priority"
@@ -37,11 +36,7 @@ class MultiAgentInteractionEngine:
         self.role_manager = role_manager
         self.config = interaction_config or InteractionConfig()
         self.holy_code_manager = holy_code_manager
-        # 行为模型管理器
-        if self.config.use_behavior_models:
-            self.behavior_manager = BehaviorModelManager()
-            self.behavior_manager.create_all_role_models()
-            self._integrate_behavior_models()
+        # behavior_models removed - using MADDPG + LLM architecture
         # 学习模型
         if self.config.use_learning_models:
             self.learning_model = None  # 将在需要时初始化
@@ -60,15 +55,7 @@ class MultiAgentInteractionEngine:
         self.active_conflicts: List[Dict] = []
         self.negotiation_history: List[Dict] = []
     
-    def _integrate_behavior_models(self):
-        """将行为模型集成到智能体中"""
-        if not self.config.use_behavior_models:
-            return
-            
-        for role, agent in self.role_manager.agents.items():
-            behavior_model = self.behavior_manager.get_model(role)
-            if behavior_model and hasattr(agent, 'set_behavior_model'):
-                agent.set_behavior_model(behavior_model)
+    # _integrate_behavior_models method removed - using MADDPG + LLM
     
     def generate_actions(self, system_state: np.ndarray, 
                         context: Dict[str, Any],
@@ -151,13 +138,6 @@ class MultiAgentInteractionEngine:
                 )
             elif self.config.use_learning_models and hasattr(agent, 'select_action'):
                 action = agent.select_action(obs, holycode_guidance, training)
-            elif self.config.use_behavior_models and hasattr(agent, 'behavior_model') and agent.behavior_model:
-                available_actions = self._get_available_actions(role)
-                action_probs = agent.behavior_model.compute_action_probabilities(
-                    obs, available_actions, context
-                )
-                selected_idx = np.argmax(action_probs)
-                action = available_actions[selected_idx]
             else:
                 action = self._generate_default_action(role, obs)
             actions[role] = action
@@ -621,9 +601,7 @@ class MultiAgentInteractionEngine:
         # 计算奖励（简化）
         rewards = self._calculate_rewards(observations, actions, context)
         
-        # 更新行为模型状态
-        if self.config.use_behavior_models and hasattr(self, 'behavior_manager'):
-            self.behavior_manager.update_all_models(observations, actions, rewards, context)
+        # behavior_models removed - no longer updating behavior models
         
         # 为智能体添加经验
         for role, agent in self.role_manager.agents.items():

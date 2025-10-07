@@ -97,6 +97,12 @@ class SimulationConfig:
     holy_code_config_path: str = 'config/holy_code_rules.yaml'
     system_matrices_config: Optional[Dict] = None
     performance_weights: Optional[Dict] = None
+    
+    # MADDPG训练配置
+    maddpg_training_episodes: int = 100
+    maddpg_batch_size: int = 32
+    maddpg_model_save_path: str = 'models/maddpg'
+    maddpg_buffer_size: int = 10000
 
 class KallipolisSimulator:
     """Kallipolis医疗共和国仿真器 - 重构版本
@@ -140,6 +146,13 @@ class KallipolisSimulator:
         self.state_space: Optional[StateSpace] = None
         self.scenario_runner: Optional[ScenarioRunner] = None  # 添加场景运行器
         
+        # MADDPG训练组件
+        self.maddpg_model: Optional[Any] = None
+        self.experience_buffer: List[Dict] = []
+        self.is_training_maddpg: bool = False
+        self.parliament_waiting: bool = False
+        self.last_parliament_step: int = 0
+        
         # 初始化核心组件
         self._initialize_components()
         
@@ -165,6 +178,9 @@ class KallipolisSimulator:
             
             # 6. 初始化场景运行器
             self._initialize_scenario_runner()
+            
+            # 7. 初始化MADDPG模型
+            self._initialize_maddpg_model()
             
             logger.info("✅ 所有核心组件初始化完成")
             
@@ -391,11 +407,20 @@ class KallipolisSimulator:
             self._update_system_state()
             step_data['system_state'] = self._get_current_state_dict()
             
-            # 2. 智能体决策
-            if self.agent_registry:
-                step_data['agent_actions'] = self._process_agent_decisions()
-            else:
-                step_data['agent_actions'] = self._process_fallback_decisions()
+            # 2. 智能体协作决策（LLM+角色智能体 + MADDPG协作）
+            llm_decisions = None
+            maddpg_decisions = None
+            
+            # 获取LLM+角色智能体决策
+            if self.agent_registry and self.config.enable_llm_integration:
+                llm_decisions = self._process_llm_agent_decisions()
+            
+            # 获取MADDPG决策
+            if self.maddpg_model and self.config.enable_learning and not self.is_training_maddpg:
+                maddpg_decisions = self._get_maddpg_decisions()
+            
+            # 融合决策（优先使用LLM+角色智能体，由MADDPG补充）
+            step_data['agent_actions'] = self._combine_decisions(llm_decisions, maddpg_decisions)
             
             # 3. 奖励计算和分发
             if self.reward_control_system:
@@ -403,10 +428,15 @@ class KallipolisSimulator:
             else:
                 step_data['rewards'] = self._compute_fallback_rewards()
             
-            # 4. 处理议会会议
-            if self.current_step % self.config.meeting_interval == 0:
+            # 4. 处理议会会议（考虑MADDPG训练状态）
+            if self._should_hold_parliament():
                 step_data['parliament_meeting'] = True
                 step_data['parliament_result'] = self._run_parliament_meeting(step_data)
+                # 议会结束后启动MADDPG训练
+                self._start_maddpg_training_after_parliament()
+            elif self.is_training_maddpg:
+                step_data['parliament_waiting'] = True
+                step_data['training_status'] = self._get_training_status()
             
             # 5. 处理危机事件
             if self.config.enable_crises:
@@ -418,7 +448,11 @@ class KallipolisSimulator:
             # 7. 记录历史数据
             self._record_step_history(step_data)
             
-            # 8. 推送数据
+            # 8. 收集MADDPG经验数据
+            if self.config.enable_learning:
+                self._collect_experience_data(step_data)
+            
+            # 9. 推送数据
             self._push_data_callback(step_data)
             
         except Exception as e:
@@ -660,35 +694,57 @@ class KallipolisSimulator:
         return rewards
     
     def _run_parliament_meeting(self, step_data: Dict[str, Any]) -> Dict[str, Any]:
-        """运行议会会议"""
+        """运行增强的议会会议（包含LLM智能体讨论和共识生成）"""
         try:
             if self.holy_code_manager and self.agent_registry:
-                # 使用神圣法典管理器运行议会
+                logger.info("🏛️ 启动LLM增强议会会议...")
+                
+                # 1. 准备议会参与者信息
                 agents_dict = {}
+                agent_discussions = {}
+                
                 for role, agent in self.agent_registry.get_all_agents().items():
                     agents_dict[role] = {
                         'name': f'{role}群体',
                         'performance': step_data['metrics'].get('overall_performance', 0.5),
                         'active': True
                     }
+                    
+                    # 2. LLM智能体生成议会发言
+                    if hasattr(agent, 'llm_generator') and agent.llm_generator:
+                        discussion_input = self._generate_parliament_discussion(role, step_data)
+                        agent_discussions[role] = discussion_input
                 
-                parliament_result = self.holy_code_manager.run_weekly_parliament_meeting(
+                # 3. 运行传统议会流程
+                base_parliament_result = self.holy_code_manager.run_weekly_parliament_meeting(
                     agents_dict, step_data['system_state']
                 )
+                
+                # 4. 进行LLM智能体讨论和共识达成
+                enhanced_result = self._conduct_llm_parliament_discussion(
+                    agent_discussions, base_parliament_result, step_data
+                )
+                
+                # 5. 生成新规则（如果达成共识）
+                new_rules = self._generate_consensus_rules(enhanced_result, step_data)
+                if new_rules:
+                    enhanced_result['new_rules_generated'] = new_rules
+                    logger.info(f"📜 议会生成了 {len(new_rules)} 条新规则")
                 
                 # 记录议会历史
                 self.history['parliament'].append({
                     'step': self.current_step,
-                    'result': parliament_result,
+                    'result': enhanced_result,
+                    'agent_discussions': agent_discussions,
                     'timestamp': time.time()
                 })
                 
-                return parliament_result
+                return enhanced_result
             else:
                 return self._run_fallback_parliament_meeting(step_data)
         
         except Exception as e:
-            logger.error(f"❌ 议会会议失败: {e}")
+            logger.error(f"❌ 增强议会会议失败: {e}")
             return {'error': str(e)}
     
     def _run_fallback_parliament_meeting(self, step_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -957,7 +1013,9 @@ class KallipolisSimulator:
                     'simulation_time': self.simulation_time,
                     'is_running': self.is_running,
                     'is_paused': self.is_paused,
-                    'version': 'refactored'
+                    'version': 'refactored',
+                    'is_training_maddpg': self.is_training_maddpg,
+                    'parliament_waiting': self.parliament_waiting
                 },
                 'component_status': component_status,
                 'component_health': f"{active_components}/{len(component_status)}",
@@ -970,11 +1028,17 @@ class KallipolisSimulator:
                 },
                 'agent_registry_status': self.agent_registry.get_registry_status() if self.agent_registry else None,
                 'reward_control_status': 'active' if self.reward_control_system else 'inactive',
+                'maddpg_status': {
+                    'is_training': self.is_training_maddpg,
+                    'buffer_size': len(self.experience_buffer),
+                    'model_loaded': self.maddpg_model is not None
+                },
                 'config': {
                     'max_steps': self.config.max_steps,
                     'enable_llm': self.config.enable_llm_integration,
                     'enable_reward_control': self.config.enable_reward_control,
-                    'llm_provider': self.config.llm_provider
+                    'llm_provider': self.config.llm_provider,
+                    'maddpg_training_episodes': self.config.maddpg_training_episodes
                 }
             }
         except Exception as e:
@@ -983,6 +1047,698 @@ class KallipolisSimulator:
                 'error': str(e),
                 'current_step': self.current_step,
                 'component_status': self._get_component_status()
+            }
+    
+    # MADDPG训练相关方法
+    def _initialize_maddpg_model(self):
+        """初始化MADDPG模型"""
+        try:
+            from ..agents.learning_models import MADDPGModel
+            
+            # 定义智能体的状态和动作维度
+            state_dim = 16  # 16维状态空间
+            action_dims = {
+                'doctors': 4,
+                'interns': 3, 
+                'patients': 3,
+                'accountants': 3,
+                'government': 3
+            }
+            
+            self.maddpg_model = MADDPGModel(
+                state_dim=state_dim,
+                action_dims=action_dims,
+                hidden_dim=128,
+                actor_lr=0.001,
+                critic_lr=0.002
+            )
+            
+            # 尝试加载预训练模型
+            try:
+                import os
+                if os.path.exists(self.config.maddpg_model_save_path):
+                    self.maddpg_model.load_models(self.config.maddpg_model_save_path)
+                    logger.info(f"✅ MADDPG模型加载成功: {self.config.maddpg_model_save_path}")
+                else:
+                    logger.info("🆕 无预训练MADDPG模型，使用随机初始化")
+            except Exception as e:
+                logger.warning(f"⚠️ MADDPG模型加载失败: {e}")
+            
+            logger.info("✅ MADDPG模型初始化完成")
+            
+        except ImportError as e:
+            logger.warning(f"⚠️ MADDPG模块导入失败: {e}")
+            self.maddpg_model = None
+        except Exception as e:
+            logger.error(f"❌ MADDPG模型初始化失败: {e}")
+            self.maddpg_model = None
+    
+    def _should_hold_parliament(self) -> bool:
+        """判断是否应该召开议会"""
+        # 如果正在训练MADDPG，议会等待
+        if self.is_training_maddpg:
+            self.parliament_waiting = True
+            return False
+        
+        # 检查是否到了会议时间
+        if self.current_step % self.config.meeting_interval == 0 and self.current_step > 0:
+            return True
+        
+        # 检查是否有延迟的议会需要召开
+        if self.parliament_waiting and not self.is_training_maddpg:
+            self.parliament_waiting = False
+            return True
+        
+        return False
+    
+    def _start_maddpg_training_after_parliament(self):
+        """议会结束后启动MADDPG训练"""
+        if not self.maddpg_model or not self.config.enable_learning:
+            logger.info("📚 MADDPG训练已禁用或模型不可用")
+            return
+        
+        if len(self.experience_buffer) < self.config.maddpg_batch_size:
+            logger.info(f"📊 经验数据不足({len(self.experience_buffer)}/{self.config.maddpg_batch_size})，跳过训练")
+            return
+        
+        self.is_training_maddpg = True
+        self.last_parliament_step = self.current_step
+        
+        logger.info(f"🎓 启动MADDPG训练 - 经验数据: {len(self.experience_buffer)}")
+        
+        # 在后台线程进行训练（简化版，实际应用中可能需要异步处理）
+        try:
+            self._train_maddpg_model()
+        except Exception as e:
+            logger.error(f"❌ MADDPG训练失败: {e}")
+            self.is_training_maddpg = False
+    
+    def _train_maddpg_model(self):
+        """训练MADDPG模型"""
+        try:
+            # 准备训练数据 - 按角色分组
+            role_batches = {}
+            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
+                role_experiences = [exp for exp in self.experience_buffer 
+                                 if exp['role'] == role and exp['next_state'] is not None]
+                if len(role_experiences) >= self.config.maddpg_batch_size:
+                    role_batches[role] = role_experiences[-self.config.maddpg_batch_size:]
+            
+            if not role_batches:
+                logger.warning("⚠️ 没有足够的训练数据")
+                return
+            
+            # 创建统一格式的训练批次
+            unified_batch = []
+            for role, experiences in role_batches.items():
+                for exp in experiences:
+                    # 确保数据格式正确
+                    unified_exp = {
+                        'role': role,
+                        'state': np.array(exp['state'], dtype=np.float32).flatten(),
+                        'action': np.array(exp['action'], dtype=np.float32).flatten(),
+                        'reward': float(exp['reward']),
+                        'next_state': np.array(exp['next_state'], dtype=np.float32).flatten(),
+                        'done': bool(exp.get('done', False))
+                    }
+                    unified_batch.append(unified_exp)
+            
+            # 训练模型
+            losses = self.maddpg_model.train(unified_batch)
+            
+            logger.info(f"🎓 MADDPG训练完成 - 损失: {losses}")
+            
+            # 保存模型
+            try:
+                self.maddpg_model.save_models(self.config.maddpg_model_save_path)
+                logger.info(f"💾 MADDPG模型已保存: {self.config.maddpg_model_save_path}")
+            except Exception as e:
+                logger.warning(f"⚠️ MADDPG模型保存失败: {e}")
+            
+            # 清理部分经验数据
+            if len(self.experience_buffer) > self.config.maddpg_buffer_size:
+                self.experience_buffer = self.experience_buffer[-self.config.maddpg_buffer_size//2:]
+            
+        except Exception as e:
+            logger.error(f"❌ MADDPG训练过程失败: {e}")
+        finally:
+            self.is_training_maddpg = False
+            logger.info("✅ MADDPG训练结束，议会可以继续")
+    
+    def _get_training_status(self) -> Dict[str, Any]:
+        """获取训练状态"""
+        return {
+            'is_training': self.is_training_maddpg,
+            'buffer_size': len(self.experience_buffer),
+            'waiting_for_training': self.parliament_waiting,
+            'last_parliament_step': self.last_parliament_step
+        }
+    
+    def _collect_experience_data(self, step_data: Dict[str, Any]):
+        """收集经验数据用于训练"""
+        try:
+            current_state = self._get_current_state_dict()
+            
+            # 为每个智能体收集经验
+            for role, action_data in step_data['agent_actions'].items():
+                if isinstance(action_data, dict) and 'action_vector' in action_data:
+                    # 确保action_vector是numpy数组格式
+                    action_vector = action_data['action_vector']
+                    if not isinstance(action_vector, np.ndarray):
+                        action_vector = np.array(action_vector, dtype=np.float32)
+                    
+                    experience = {
+                        'role': role,
+                        'state': self._get_observation_for_role(role, current_state).astype(np.float32),
+                        'action': action_vector.astype(np.float32),
+                        'reward': float(step_data['rewards'].get(role, 0.0)),
+                        'next_state': None,  # 将在下一步填充
+                        'done': False,
+                        'step': self.current_step
+                    }
+                    
+                    self.experience_buffer.append(experience)
+            
+            # 填充上一步的next_state
+            if len(self.experience_buffer) >= 2:
+                for i in range(len(self.experience_buffer)-len(step_data['agent_actions']), len(self.experience_buffer)):
+                    if i > 0 and self.experience_buffer[i-1]['next_state'] is None:
+                        self.experience_buffer[i-1]['next_state'] = self.experience_buffer[i]['state']
+        
+        except Exception as e:
+            logger.warning(f"⚠️ 收集经验数据失败: {e}")
+    
+    def _get_observation_for_role(self, role: str, current_state: Dict[str, float]) -> np.ndarray:
+        """为特定角色获取观测"""
+        if self.state_space:
+            return self.state_space.get_state_vector().astype(np.float32)
+        else:
+            # 降级到简化观测
+            state_values = list(current_state.values())
+            # 填充到16维
+            while len(state_values) < 16:
+                state_values.append(0.0)
+            return np.array(state_values[:16], dtype=np.float32)
+    
+    def _process_llm_agent_decisions(self) -> Dict[str, Any]:
+        """处理LLM+角色智能体的自动决策生成"""
+        actions = {}
+        
+        try:
+            agents = self.agent_registry.get_all_agents()
+            current_state = self._get_current_state_dict()
+            
+            for role, agent in agents.items():
+                try:
+                    # 生成观测
+                    observation = self._generate_observation_for_agent(role)
+                    
+                    # 使用LLM增强的决策
+                    if hasattr(agent, 'llm_generator') and agent.llm_generator:
+                        # 构建上下文
+                        context = {
+                            'role': role,
+                            'observation': observation.tolist(),
+                            'system_state': current_state,
+                            'step': self.current_step,
+                            'simulation_time': self.simulation_time
+                        }
+                        
+                        # LLM生成动作和推理
+                        holy_code_state = self.holy_code_manager.get_current_state() if self.holy_code_manager else {}
+                        llm_response = agent.llm_generator.generate_action_sync(
+                            role=role,
+                            observation=observation,
+                            holy_code_state=holy_code_state,
+                            context={**context, 'system_state': current_state}
+                        )
+                        
+                        # 解析LLM响应
+                        action_vector, reasoning = self._parse_llm_response(llm_response, role)
+                        
+                        actions[role] = {
+                            'action_vector': action_vector,
+                            'agent_type': 'LLM_Enhanced',
+                            'confidence': 0.85,
+                            'reasoning': reasoning,
+                            'llm_response': llm_response[:200] + '...' if len(llm_response) > 200 else llm_response
+                        }
+                        
+                    else:
+                        # 使用角色智能体的默认决策
+                        action = agent.sample_action(observation)
+                        
+                        actions[role] = {
+                            'action_vector': action.tolist() if hasattr(action, 'tolist') else action,
+                            'agent_type': 'RoleAgent',
+                            'confidence': 0.7,
+                            'reasoning': f'{role}基于角色特征的决策'
+                        }
+                        
+                except Exception as e:
+                    logger.warning(f"⚠️ LLM+角色智能体 {role} 决策失败: {e}")
+                    # 降级到简单决策
+                    actions[role] = {
+                        'action_vector': [0.0] * 3,
+                        'agent_type': 'Fallback',
+                        'confidence': 0.5,
+                        'reasoning': f'{role}使用默认行动'
+                    }
+            
+            logger.info(f"🤖 LLM+角色智能体生成决策: {list(actions.keys())}")
+            return actions
+            
+        except Exception as e:
+            logger.error(f"❌ LLM+角色智能体决策失败: {e}")
+            return self._process_fallback_decisions()
+    
+    def _get_maddpg_decisions(self) -> Dict[str, Any]:
+        """获取MADDPG决策（不直接使用，作为补充）"""
+        if not self.maddpg_model:
+            return None
+            
+        try:
+            # 获取各角色观测
+            observations = {}
+            current_state = self._get_current_state_dict()
+            
+            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
+                observations[role] = self._get_observation_for_role(role, current_state)
+            
+            # 使用MADDPG获取动作
+            maddpg_actions = self.maddpg_model.get_actions(observations, training=False)
+            
+            # 转换为统一格式
+            formatted_actions = {}
+            for role, action_vector in maddpg_actions.items():
+                formatted_actions[role] = {
+                    'action_vector': action_vector.tolist() if hasattr(action_vector, 'tolist') else action_vector,
+                    'agent_type': 'MADDPG_Supplement',
+                    'confidence': 0.8,
+                    'reasoning': f'{role}基于MADDPG模型的补充决策'
+                }
+            
+            return formatted_actions
+            
+        except Exception as e:
+            logger.error(f"❌ MADDPG补充决策失败: {e}")
+            return None
+    
+    def _combine_decisions(self, llm_decisions: Dict[str, Any], maddpg_decisions: Dict[str, Any]) -> Dict[str, Any]:
+        """融合LLM和MADDPG决策"""
+        if llm_decisions:
+            logger.info("🎓 使用LLM+角色智能体主导决策")
+            
+            # 如果有MADDPG补充，添加参考信息
+            if maddpg_decisions:
+                for role in llm_decisions:
+                    if role in maddpg_decisions:
+                        llm_decisions[role]['maddpg_reference'] = maddpg_decisions[role]['action_vector']
+                        llm_decisions[role]['reasoning'] += f" [参考MADDPG建议]"
+            
+            return llm_decisions
+        
+        elif maddpg_decisions:
+            logger.info("🤖 使用MADDPG补充决策")
+            return maddpg_decisions
+        
+        else:
+            logger.info("🔄 使用降级决策")
+            return self._process_fallback_decisions()
+    
+    def _parse_llm_response(self, llm_response: str, role: str) -> Tuple[List[float], str]:
+        """解析LLM响应，提取动作向量和推理"""
+        try:
+            import re
+            
+            # 尝试提取向量格式 [x, y, z] 或 (x, y, z)
+            vector_pattern = r'[\[\(]([\d\.-]+(?:,\s*[\d\.-]+)*)[\]\)]'
+            vector_match = re.search(vector_pattern, llm_response)
+            
+            if vector_match:
+                vector_str = vector_match.group(1)
+                action_vector = [float(x.strip()) for x in vector_str.split(',')]
+                
+                # 规范化到[-1, 1]区间
+                action_vector = [max(-1.0, min(1.0, x)) for x in action_vector]
+                
+                # 提取推理部分
+                reasoning_parts = llm_response.split('\n')
+                reasoning = next((part.strip() for part in reasoning_parts 
+                               if part.strip() and not vector_match.group(0) in part), 
+                               f"{role}的LLM决策")
+                
+                return action_vector, reasoning
+            
+            else:
+                # 如果没有找到向量，基于关键词推断
+                action_vector = self._infer_action_from_text(llm_response, role)
+                return action_vector, llm_response[:100] + '...'
+                
+        except Exception as e:
+            logger.warning(f"⚠️ 解析LLM响应失败: {e}")
+            # 返回默认动作
+            return [0.1, 0.1, 0.1], f"{role}默认动作"
+    
+    def _infer_action_from_text(self, text: str, role: str) -> List[float]:
+        """从文本推断动作向量"""
+        text_lower = text.lower()
+        
+        # 角色特定的关键词映射
+        role_keywords = {
+            'doctors': {
+                '提高质量|治疗|诊断': [0.8, 0.2, 0.3, 0.4],
+                '节约成本|效率': [0.3, 0.8, 0.2, 0.1],
+                '安全|防范': [0.5, 0.1, 0.9, 0.2],
+                '培训|教学': [0.2, 0.3, 0.1, 0.8]
+            },
+            'patients': {
+                '满意|服务': [0.8, 0.4, 0.2],
+                '投诉|不满': [-0.5, 0.1, 0.7],
+                '等待|延误': [0.2, -0.3, 0.5]
+            },
+            'government': {
+                '监管|检查': [0.6, 0.8, 0.4],
+                '资金|支持': [0.4, 0.9, 0.2],
+                '政策|规定': [0.8, 0.3, 0.7]
+            }
+        }
+        
+        if role in role_keywords:
+            for keywords, action in role_keywords[role].items():
+                if any(keyword in text_lower for keyword in keywords.split('|')):
+                    return action
+        
+        # 默认中性动作
+        default_dims = {'doctors': 4, 'interns': 3, 'patients': 3, 'accountants': 3, 'government': 3}
+        dim = default_dims.get(role, 3)
+        return [0.1] * dim
+    
+    def _generate_parliament_discussion(self, role: str, step_data: Dict[str, Any]) -> str:
+        """生成议会讨论内容"""
+        try:
+            agent = self.agent_registry.get_agent(role)
+            if not (hasattr(agent, 'llm_generator') and agent.llm_generator):
+                return f"{role}未参与讨论"
+            
+            # 构建议会讨论提示
+            discussion_prompt = f"""
+            作为{role}的代表，在本次议会上，请针对当前医院运营情况发表意见：
+            
+            当前系统状态：
+            - 整体绩效：{step_data['metrics'].get('overall_performance', 0.5):.2f}
+            - 医疗质量：{step_data['system_state'].get('care_quality_index', 0.8):.2f}
+            - 财务状况：{step_data['system_state'].get('financial_indicator', 0.7):.2f}
+            - 患者满意度：{step_data['system_state'].get('patient_satisfaction', 0.75):.2f}
+            
+            请提出：
+            1. 你的角色对当前情况的看法
+            2. 你认为需要改进的问题
+            3. 具体的改进建议
+            4. 你支持制定哪些新规则
+            
+            请用150字左右表达你的观点：
+            """
+            
+            # 获取LLM响应
+            holy_code_state = step_data.get('holy_code_state', {})
+            discussion = agent.llm_generator.generate_action_sync(
+                role=role,
+                observation=np.array([0.5] * 8),  # 议会上下文
+                holy_code_state=holy_code_state,
+                context={'prompt': discussion_prompt, 'type': 'parliament_discussion', 'system_state': step_data['system_state']}
+            )
+            
+            return discussion
+            
+        except Exception as e:
+            logger.warning(f"⚠️ 生成{role}议会讨论失败: {e}")
+            return f"{role}：支持现有政策，建议维持稳定。"
+    
+    def _conduct_llm_parliament_discussion(self, agent_discussions: Dict[str, str], 
+                                         base_result: Dict[str, Any], 
+                                         step_data: Dict[str, Any]) -> Dict[str, Any]:
+        """进行LLM智能体议会讨论和共识达成"""
+        enhanced_result = base_result.copy()
+        
+        try:
+            # 整合所有参与者的观点
+            all_discussions = "\n\n".join([
+                f"**{role}代表的发言**:\n{discussion}"
+                for role, discussion in agent_discussions.items()
+            ])
+            
+            # 分析共同关注点
+            common_concerns = self._extract_common_concerns(agent_discussions)
+            
+            # 评估共识程度
+            consensus_level = self._calculate_consensus_level(agent_discussions, step_data)
+            
+            # 增强结果
+            enhanced_result.update({
+                'llm_discussions': agent_discussions,
+                'all_discussions_summary': all_discussions,
+                'common_concerns': common_concerns,
+                'consensus_level': consensus_level,
+                'discussion_participants': list(agent_discussions.keys()),
+                'enhanced_by_llm': True
+            })
+            
+            logger.info(f"💬 议会讨论完成，共识程度: {consensus_level:.2f}")
+            
+            return enhanced_result
+            
+        except Exception as e:
+            logger.error(f"❌ 议会讨论失败: {e}")
+            enhanced_result['llm_discussion_error'] = str(e)
+            return enhanced_result
+    
+    def _extract_common_concerns(self, discussions: Dict[str, str]) -> List[str]:
+        """提取共同关注点"""
+        # 关键词分析
+        common_keywords = {
+            '医疗质量': ['质量', '治疗', '医疗', '诊断'],
+            '财务管理': ['成本', '费用', '财务', '预算'],
+            '患者服务': ['患者', '服务', '满意', '体验'],
+            '人员管理': ['医生', '护士', '人员', '培训'],
+            '安全管理': ['安全', '风险', '防范', '事故']
+        }
+        
+        concerns_count = {concern: 0 for concern in common_keywords.keys()}
+        
+        # 统计关键词出现频率
+        for discussion in discussions.values():
+            for concern, keywords in common_keywords.items():
+                if any(keyword in discussion for keyword in keywords):
+                    concerns_count[concern] += 1
+        
+        # 返回被多数人关注的问题
+        threshold = len(discussions) * 0.5  # 超过50%的参与者关注
+        common_concerns = [concern for concern, count in concerns_count.items() 
+                          if count >= threshold]
+        
+        return common_concerns
+    
+    def _calculate_consensus_level(self, discussions: Dict[str, str], step_data: Dict[str, Any]) -> float:
+        """计算共识程度"""
+        try:
+            # 基于关键词一致性和情感分析
+            positive_keywords = ['支持', '赞成', '同意', '好', '优秀', '满意']
+            negative_keywords = ['反对', '不同意', '问题', '不满', '抗议', '糟糕']
+            
+            positive_count = 0
+            negative_count = 0
+            neutral_count = 0
+            
+            for discussion in discussions.values():
+                pos_score = sum(1 for keyword in positive_keywords if keyword in discussion)
+                neg_score = sum(1 for keyword in negative_keywords if keyword in discussion)
+                
+                if pos_score > neg_score:
+                    positive_count += 1
+                elif neg_score > pos_score:
+                    negative_count += 1
+                else:
+                    neutral_count += 1
+            
+            total = len(discussions)
+            if total == 0:
+                return 0.5
+            
+            # 计算共识度 (0-1)
+            consensus = (positive_count + neutral_count * 0.5) / total
+            
+            # 考虑系统整体状态
+            system_performance = step_data['metrics'].get('overall_performance', 0.5)
+            adjusted_consensus = (consensus + system_performance) / 2
+            
+            return min(1.0, max(0.0, adjusted_consensus))
+            
+        except Exception as e:
+            logger.warning(f"⚠️ 计算共识度失败: {e}")
+            return 0.5
+    
+    def _generate_consensus_rules(self, parliament_result: Dict[str, Any], step_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """基于共识生成新规则"""
+        new_rules = []
+        
+        try:
+            consensus_level = parliament_result.get('consensus_level', 0.5)
+            common_concerns = parliament_result.get('common_concerns', [])
+            
+            # 只有在达成较高共识时才生成新规则
+            if consensus_level < 0.7:
+                logger.info(f"📊 共识程度较低({consensus_level:.2f})，不生成新规则")
+                return new_rules
+            
+            # 基于共同关注点生成规则
+            current_performance = step_data['metrics'].get('overall_performance', 0.5)
+            
+            for concern in common_concerns:
+                rule = self._create_rule_for_concern(concern, current_performance, consensus_level)
+                if rule:
+                    new_rules.append(rule)
+            
+            # 添加到神圣法典管理器（如果可能）
+            if new_rules and self.holy_code_manager:
+                try:
+                    for rule in new_rules:
+                        # 尝试添加到规则库
+                        if hasattr(self.holy_code_manager, 'rule_engine'):
+                            # 这里可以添加具体的规则添加逻辑
+                            logger.info(f"📜 尝试添加新规则: {rule['name']}")
+                except Exception as e:
+                    logger.warning(f"⚠️ 添加新规则失败: {e}")
+            
+            return new_rules
+            
+        except Exception as e:
+            logger.error(f"❌ 生成共识规则失败: {e}")
+            return []
+    
+    def _create_rule_for_concern(self, concern: str, performance: float, consensus: float) -> Dict[str, Any]:
+        """为特定关注点创建规则"""
+        rule_templates = {
+            '医疗质量': {
+                'name': f'医疗质量提升规则_{self.current_step}',
+                'description': '基于议会共识制定的医疗质量改进措施',
+                'type': 'quality_improvement',
+                'target_metric': 'care_quality_index',
+                'improvement_target': min(0.95, performance + 0.1),
+                'consensus_level': consensus
+            },
+            '财务管理': {
+                'name': f'财务优化规则_{self.current_step}',
+                'description': '基于议会共识的成本控制和资源优化措施',
+                'type': 'financial_optimization',
+                'target_metric': 'financial_indicator',
+                'improvement_target': min(0.9, performance + 0.08),
+                'consensus_level': consensus
+            },
+            '患者服务': {
+                'name': f'患者服务提升规则_{self.current_step}',
+                'description': '基于议会共识的患者体验改善措施',
+                'type': 'patient_service',
+                'target_metric': 'patient_satisfaction',
+                'improvement_target': min(0.95, performance + 0.12),
+                'consensus_level': consensus
+            },
+            '人员管理': {
+                'name': f'人力资源优化规则_{self.current_step}',
+                'description': '基于议会共识的人员管理和培训改善',
+                'type': 'hr_management',
+                'target_metric': 'staff_workload_balance',
+                'improvement_target': min(0.9, performance + 0.1),
+                'consensus_level': consensus
+            },
+            '安全管理': {
+                'name': f'安全管理强化规则_{self.current_step}',
+                'description': '基于议会共识的安全风险防控措施',
+                'type': 'safety_management',
+                'target_metric': 'safety_incident_rate',
+                'improvement_target': max(0.05, performance - 0.1),  # 事故率越低越好
+                'consensus_level': consensus
+            }
+        }
+        
+        if concern in rule_templates:
+            rule = rule_templates[concern].copy()
+            rule['created_at'] = self.current_step
+            rule['created_by'] = 'parliament_consensus'
+            return rule
+        
+        return None
+    
+    def _use_maddpg_for_decisions(self) -> Dict[str, Any]:
+        """使用MADDPG模型进行决策"""
+        if not self.maddpg_model:
+            return self._process_fallback_decisions()
+        
+        try:
+            # 获取各角色观测
+            observations = {}
+            current_state = self._get_current_state_dict()
+            
+            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
+                observations[role] = self._get_observation_for_role(role, current_state)
+            
+            # 使用MADDPG获取动作
+            actions = self.maddpg_model.get_actions(observations, training=False)
+            
+            # 转换为仿真器期望的格式
+            formatted_actions = {}
+            for role, action_vector in actions.items():
+                formatted_actions[role] = {
+                    'action_vector': action_vector.tolist() if hasattr(action_vector, 'tolist') else action_vector,
+                    'agent_type': 'MADDPG',
+                    'confidence': 0.85,
+                    'reasoning': f'{role}基于MADDPG模型决策'
+                }
+            
+            logger.info(f"🤖 使用MADDPG模型生成决策: {list(formatted_actions.keys())}")
+            return formatted_actions
+            
+        except Exception as e:
+            logger.error(f"❌ MADDPG决策失败: {e}")
+            return self._process_fallback_decisions()
+    
+    def get_current_state(self) -> Dict[str, Any]:
+        """获取当前系统状态"""
+        try:
+            # 获取核心系统状态
+            system_state = {}
+            if self.core_system:
+                system_state = self.core_system.get_current_state()
+            
+            # 获取奖励控制状态
+            reward_state = {}
+            if self.reward_control_system:
+                try:
+                    reward_state = self.reward_control_system.get_system_state()
+                except:
+                    reward_state = {'reward_system': 'available'}
+            
+            # 组合状态信息
+            current_state = {
+                'current_step': self.current_step,
+                'simulation_time': self.simulation_time,
+                'is_running': self.is_running,
+                'is_paused': self.is_paused,
+                'system_state': system_state,
+                'reward_state': reward_state,
+                'agent_count': len(self.agent_registry.get_all_agents()) if self.agent_registry else 0,
+                'experience_buffer_size': len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0,
+                'maddpg_enabled': hasattr(self, 'maddpg_model') and self.maddpg_model is not None,
+                'parliament_frequency': self.config.parliament_frequency if self.config else 0
+            }
+            
+            return current_state
+            
+        except Exception as e:
+            logger.warning(f"⚠️ 获取当前状态失败: {e}")
+            return {
+                'current_step': self.current_step,
+                'error': str(e)
             }
 
 # 导出

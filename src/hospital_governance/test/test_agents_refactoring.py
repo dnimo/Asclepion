@@ -168,7 +168,7 @@ def test_multi_agent_coordinator():
         
         # 创建交互配置和引擎
         interaction_config = InteractionConfig(
-            use_behavior_models=True,
+            use_behavior_models=False,  # disabled - using MADDPG + LLM
             use_learning_models=False,
             use_llm_generation=False,
             conflict_resolution="negotiation"
@@ -244,7 +244,7 @@ def test_complete_workflow():
         
         # 3. 创建协调引擎
         interaction_config = InteractionConfig(
-            use_behavior_models=True,
+            use_behavior_models=False,  # disabled - using MADDPG + LLM
             use_learning_models=False,
             use_llm_generation=False,
             conflict_resolution="negotiation"

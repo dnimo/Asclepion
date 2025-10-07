@@ -6,15 +6,7 @@
 from .role_agents import (RoleAgent, RoleManager, 
                          DoctorAgent, InternAgent,
                          PatientAgent, AccountantAgent, GovernmentAgent)
-from .behavior_models import (
-    # 新的行为模型系统
-    BehaviorType, BehaviorParameters, BehaviorState, BaseBehaviorModel,
-    RationalBehaviorModel, BoundedRationalBehaviorModel, EmotionalBehaviorModel,
-    SocialBehaviorModel, AdaptiveBehaviorModel, BehaviorModelFactory, BehaviorModelManager,
-    # 保持向后兼容的旧接口（如果存在）
-    # BehaviorModel, RuleBasedBehavior, LearningBasedBehavior, CompositeBehavior,
-    # avoidance_rule, attraction_rule
-)
+# behavior_models removed - using MADDPG + LLM architecture instead
 from .learning_models import (LearningModel, MADDPGModel, DQNModel,
                              BaseNetwork, Actor, Critic)
 from .llm_action_generator import (
@@ -33,10 +25,10 @@ __all__ = [
     'RoleAgent', 'RoleManager', 
     'DoctorAgent', 'InternAgent', 'PatientAgent', 'AccountantAgent', 'GovernmentAgent',
     
-    # 行为模型系统
-    'BehaviorType', 'BehaviorParameters', 'BehaviorState', 'BaseBehaviorModel',
-    'RationalBehaviorModel', 'BoundedRationalBehaviorModel', 'EmotionalBehaviorModel',
-    'SocialBehaviorModel', 'AdaptiveBehaviorModel', 'BehaviorModelFactory', 'BehaviorModelManager',
+    # Behavior models system (removed - using MADDPG + LLM instead)
+    # 'BehaviorType', 'BehaviorParameters', 'BehaviorState', 'BaseBehaviorModel',
+    # 'RationalBehaviorModel', 'BoundedRationalBehaviorModel', 'EmotionalBehaviorModel',
+    # 'SocialBehaviorModel', 'AdaptiveBehaviorModel', 'BehaviorModelFactory', 'BehaviorModelManager',
     
     # 学习模型
     'LearningModel', 'MADDPGModel', 'DQNModel', 'BaseNetwork',

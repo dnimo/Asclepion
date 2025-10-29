@@ -1,3 +1,13 @@
+# 以下内容合并自 base_reward_controller.py，确保兼容性
+class RewardControlConfig:
+    def __init__(self, config_dict=None):
+        self.config_dict = config_dict or {}
+
+class RewardBasedController:
+    def __init__(self, config=None):
+        self.config = config or RewardControlConfig()
+    def compute_reward(self, system_state, action, decisions):
+        raise NotImplementedError('请在子类实现 compute_reward 方法')
 """
 奖励驱动控制系统 - 基于智能体奖励逻辑重构的新控制架构
 Reward-Based Control System - Control architecture refactored based on agent reward logic
@@ -12,7 +22,7 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import logging
 
-from ..core.kallipolis_mathematical_core import SystemState, Agent
+from ..core.state_space import SystemState
 from ..agents.role_agents import RoleAgent
 
 logger = logging.getLogger(__name__)
@@ -89,51 +99,6 @@ class RewardBasedController(ABC):
         trend_adjustment = self._compute_trend_based_adjustment()
         
         # 计算基于角色特异性的调节
-        role_adjustment = self._compute_role_specific_adjustment(
-            current_state, target_state, control_context
-        )
-        
-        # 计算探索奖励
-        exploration_bonus = self._compute_exploration_bonus(control_context)
-        
-        # 综合调节
-        total_adjustment = (error_adjustment + 
-                          trend_adjustment + 
-                          role_adjustment + 
-                          exploration_bonus)
-        
-        # 应用缩放因子
-        scaled_adjustment = total_adjustment * self.config.reward_scaling_factor
-        
-        # 计算最终奖励
-        adjusted_reward = base_reward + scaled_adjustment
-        
-        # 更新内部状态
-        self._update_internal_state(adjusted_reward, state_error)
-        
-        # 奖励归一化
-        if self.config.reward_normalization:
-            adjusted_reward = self._normalize_reward(adjusted_reward)
-        
-        logger.debug(f"{self.role} reward adjustment: {base_reward:.3f} -> {adjusted_reward:.3f}")
-        
-        return adjusted_reward
-    
-    def _compute_state_error(self, current: SystemState, target: SystemState) -> np.ndarray:
-        """计算状态偏差向量"""
-        current_vec = current.to_vector()
-        target_vec = target.to_vector()
-        return target_vec - current_vec
-    
-    @abstractmethod
-    def _compute_role_specific_adjustment(self, 
-                                        current_state: SystemState,
-                                        target_state: SystemState,
-                                        context: Dict[str, Any]) -> float:
-        """计算基于角色特异性的奖励调节 - 子类实现"""
-        pass
-    
-    def _compute_error_based_adjustment(self, state_error: np.ndarray) -> float:
         """基于状态偏差的奖励调节"""
         # 计算加权误差
         error_magnitude = np.linalg.norm(state_error)

@@ -1,71 +1,104 @@
+# 统一状态空间定义，供参考生成器等模块使用
+class StateSpaceDefinition:
+    def __init__(self):
+        self.dimensions = 16
+        self.state_names = [
+            'medical_resource_utilization',
+            'patient_waiting_time',
+            'financial_indicator',
+            'ethical_compliance',
+            'education_training_quality',
+            'intern_satisfaction',
+            'professional_development',
+            'mentorship_effectiveness',
+            'patient_satisfaction',
+            'service_accessibility',
+            'care_quality_index',
+            'safety_incident_rate',
+            'operational_efficiency',
+            'staff_workload_balance',
+            'crisis_response_capability',
+            'regulatory_compliance_score'
+        ]
 import numpy as np
 from typing import Dict, List, Any
 from dataclasses import dataclass
 
+
+
+# 直接在此定义 SystemState，其他模块统一从此处导入
+from dataclasses import dataclass
+import numpy as np
+
 @dataclass
-class StateSpaceDefinition:
-    """状态空间定义"""
-    dimension: int = 16
-    state_names: List[str] = None
-    
-    def __post_init__(self):
-        if self.state_names is None:
-            self.state_names = [
-                # 物理资源状态 (x₁-x₄)
-                'bed_occupancy_rate',           # 病床占用率
-                'medical_equipment_utilization', # 医疗设备利用率  
-                'staff_utilization_rate',       # 人员利用率
-                'medication_inventory_level',   # 药品库存水平
-                
-                # 财务状态 (x₅-x₈)
-                'cash_reserve_ratio',           # 现金储备率
-                'operating_margin',             # 运营利润率
-                'debt_to_asset_ratio',          # 资产负债率
-                'cost_efficiency_index',        # 成本效率指数
-                
-                # 服务质量状态 (x₉-x₁₂)
-                'patient_satisfaction_index',   # 患者满意度指数
-                'treatment_success_rate',       # 治疗成功率
-                'average_wait_time',            # 平均等待时间
-                'medical_safety_index',         # 医疗安全指数
-                
-                # 教育伦理状态 (x₁₃-x₁₆)
-                'ethical_compliance_score',     # 伦理合规得分
-                'resource_allocation_fairness', # 资源分配公平性
-                'intern_learning_efficiency',   # 实习生学习效率
-                'knowledge_transfer_rate'       # 知识传递率
-            ]
+class SystemState:
+    medical_resource_utilization: float = 0.0
+    patient_waiting_time: float = 0.0
+    financial_indicator: float = 0.0
+    ethical_compliance: float = 0.0
+    education_training_quality: float = 0.0
+    intern_satisfaction: float = 0.0
+    professional_development: float = 0.0
+    mentorship_effectiveness: float = 0.0
+    patient_satisfaction: float = 0.0
+    service_accessibility: float = 0.0
+    care_quality_index: float = 0.0
+    safety_incident_rate: float = 0.0
+    operational_efficiency: float = 0.0
+    staff_workload_balance: float = 0.0
+    crisis_response_capability: float = 0.0
+    regulatory_compliance_score: float = 0.0
+
+    def to_vector(self) -> np.ndarray:
+        return np.array([
+            self.medical_resource_utilization,
+            self.patient_waiting_time,
+            self.financial_indicator,
+            self.ethical_compliance,
+            self.education_training_quality,
+            self.intern_satisfaction,
+            self.professional_development,
+            self.mentorship_effectiveness,
+            self.patient_satisfaction,
+            self.service_accessibility,
+            self.care_quality_index,
+            self.safety_incident_rate,
+            self.operational_efficiency,
+            self.staff_workload_balance,
+            self.crisis_response_capability,
+            self.regulatory_compliance_score
+        ])
+
+    @staticmethod
+    def from_vector(vec: np.ndarray):
+        return SystemState(*vec[:16])
+
 
 class StateSpace:
-    """状态空间管理类"""
-    
-    def __init__(self, initial_state: np.ndarray = None):
-        self.definition = StateSpaceDefinition()
-        
+    """状态空间管理类，统一使用 SystemState 结构"""
+    def __init__(self, initial_state: SystemState = None):
         if initial_state is None:
-            self.current_state = np.zeros(self.definition.dimension)
+            self.current_state = SystemState.from_vector(np.zeros(16))
         else:
             self.current_state = initial_state
-            
-        self.state_history = [self.current_state.copy()]
-    
-    def update_state(self, new_state: np.ndarray):
+        self.state_history = [self.current_state]
+
+    def update_state(self, new_state: SystemState):
         """更新系统状态"""
         self.current_state = new_state
-        self.state_history.append(new_state.copy())
-    
+        self.state_history.append(new_state)
+
     def get_state_by_name(self, state_name: str) -> float:
-        """通过名称获取状态值"""
-        if state_name in self.definition.state_names:
-            index = self.definition.state_names.index(state_name)
-            return self.current_state[index]
+        """通过名称获取状态值（根据 SystemState 属性名）"""
+        if hasattr(self.current_state, state_name):
+            return getattr(self.current_state, state_name)
         else:
             raise ValueError(f"未知状态名称: {state_name}")
-    
+
     def get_state_vector(self) -> np.ndarray:
         """获取当前状态向量"""
-        return self.current_state.copy()
-    
-    def get_state_history(self) -> List[np.ndarray]:
+        return self.current_state.to_vector()
+
+    def get_state_history(self) -> List[SystemState]:
         """获取状态历史"""
         return self.state_history.copy()

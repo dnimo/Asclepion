@@ -1,8 +1,14 @@
+
 import numpy as np
 from typing import Dict, List, Any, Tuple
 from collections import deque
 import random
 from dataclasses import dataclass
+from hospital_governance.control.role_specific_reward_controllers import (
+    DoctorRewardController, InternRewardController, PatientRewardController, AccountantRewardController, GovernmentRewardController
+)
+from hospital_governance.control.reward_based_controller import RewardBasedController, RewardControlConfig
+from hospital_governance.core.kallipolis_mathematical_core import SystemState
 
 @dataclass
 class CrisisScenario:
@@ -15,21 +21,11 @@ class CrisisScenario:
 
 class KallipolisInteractionEngine:
     """Kallipolis医疗共和国交互引擎"""
-    
-    def __init__(self, role_manager, parliament, state_dim: int = 20, holy_code_manager: Any = None):
+    def __init__(self, role_manager, parliament, system_state: SystemState, holy_code_manager: Any = None):
         self.role_manager = role_manager
         self.parliament = parliament
-        self.state_dim = state_dim
         self.holy_code_manager = holy_code_manager
-        # 系统状态
-        self.system_state = {
-            'resource_utilization': 0.7,
-            'financial_health': 0.8,
-            'patient_satisfaction': 0.75,
-            'medical_quality': 0.85,
-            'education_effectiveness': 0.7,
-            'operational_efficiency': 0.75
-        }
+        self.system_state = system_state
         # 危机管理
         self.active_crises: List[CrisisScenario] = []
         self.crisis_history: List[Dict] = []
@@ -86,15 +82,15 @@ class KallipolisInteractionEngine:
     def _get_observations(self) -> Dict[str, np.ndarray]:
         """获取各角色的观察"""
         observations = {}
-        
-        # 构建系统状态向量
+        # 构建系统状态向量（从 SystemState 对象获取）
+        # 这里假定 SystemState 有相关属性，需与原 system_state dict 映射
         system_state_vector = np.array([
-            self.system_state['resource_utilization'],
-            self.system_state['financial_health'],
-            self.system_state['patient_satisfaction'],
-            self.system_state['medical_quality'],
-            self.system_state['education_effectiveness'],
-            self.system_state['operational_efficiency'],
+            getattr(self.system_state, 'resource_utilization', 0.7),
+            getattr(self.system_state, 'financial_health', 0.8),
+            getattr(self.system_state, 'patient_satisfaction', 0.75),
+            getattr(self.system_state, 'medical_quality', 0.85),
+            getattr(self.system_state, 'education_effectiveness', 0.7),
+            getattr(self.system_state, 'operational_efficiency', 0.75),
             len(self.active_crises) / 5.0,  # 危机数量归一化
             max([c.severity for c in self.active_crises]) if self.active_crises else 0.0
         ])
@@ -218,83 +214,83 @@ class KallipolisInteractionEngine:
     
     def _execute_actions(self, actions: Dict[str, np.ndarray],
                         parliament_decisions: Dict[str, Any]) -> Dict[str, float]:
-        """执行行动并计算奖励"""
+        """执行行动并计算奖励（调用 control 模块奖励控制器）"""
         rewards = {}
-        
-        # 基于行动和议会决策更新系统状态
+        # 初始化奖励控制器（可根据角色缓存或工厂模式优化）
+        # 支持多种角色名映射（如 doctor -> doctors）
+        role_map = {
+            'doctor': 'doctors',
+            'doctors': 'doctors',
+            'intern': 'interns',
+            'interns': 'interns',
+            'patient': 'patients',
+            'patients': 'patients',
+            'accountant': 'accountants',
+            'accountants': 'accountants',
+            'government': 'government'
+        }
+        reward_controllers = {
+            'doctors': DoctorRewardController,
+            'interns': InternRewardController,
+            'patients': PatientRewardController,
+            'accountants': AccountantRewardController,
+            'government': GovernmentRewardController
+        }
         for role, action in actions.items():
-            # 简化的状态更新逻辑
-            reward = self._calculate_reward(role, action, parliament_decisions)
+            mapped_role = role_map.get(role, role)
+            controller_cls = reward_controllers.get(mapped_role)
+            if controller_cls:
+                # 获取 agent 对象
+                agent_obj = None
+                # 支持多种角色名映射
+                if hasattr(self.role_manager, 'get_agent'):
+                    agent_obj = self.role_manager.get_agent(mapped_role)
+                # 构造 config
+                from hospital_governance.control.reward_based_controller import RewardControlConfig
+                config_obj = RewardControlConfig(role=mapped_role)
+                controller = controller_cls(config_obj, agent_obj)
+                reward = controller.compute_reward(self.system_state, action, parliament_decisions)
+            else:
+                reward = 0.5  # 默认奖励
             rewards[role] = reward
-            
-            # 更新系统状态（简化）
             self._update_system_state(role, action, parliament_decisions)
-        
         return rewards
     
-    def _calculate_reward(self, role: str, action: np.ndarray,
-                         decisions: Dict[str, Any]) -> float:
-        """计算奖励"""
-        base_reward = 0.0
-        
-        # 角色特定奖励
-        if role == 'doctors':
-            base_reward = self.system_state['medical_quality'] * 0.6 + \
-                         self.system_state['operational_efficiency'] * 0.4
-        elif role == 'interns':
-            base_reward = self.system_state['education_effectiveness'] * 0.7 + \
-                         self.system_state['medical_quality'] * 0.3
-        elif role == 'accountants':
-            base_reward = self.system_state['financial_health'] * 0.8 + \
-                         self.system_state['resource_utilization'] * 0.2
-        elif role == 'patients':
-            base_reward = self.system_state['patient_satisfaction'] * 0.6 + \
-                         self.system_state['medical_quality'] * 0.4
-        elif role == 'government':
-            base_reward = self.system_state['operational_efficiency'] * 0.5 + \
-                         self.system_state['financial_health'] * 0.3 + \
-                         self.system_state['medical_quality'] * 0.2
-        else:
-            base_reward = 0.5
-        
-        # 议会决策奖励
-        decision_bonus = 0.0
-        for decision in decisions.values():
-            if decision['approved'] and decision['proposer'] == role:
-                decision_bonus += 0.2
-            elif decision['approved'] and decision['approval_ratio'] > 0.9:
-                decision_bonus += 0.1
-        
-        # 危机应对奖励
-        crisis_penalty = -0.1 * len(self.active_crises)
-        
-        return base_reward + decision_bonus + crisis_penalty
+    # 奖励计算逻辑已迁移至 control 模块
     
     def _update_system_state(self, role: str, action: np.ndarray,
                            decisions: Dict[str, Any]):
-        """更新系统状态"""
-        # 简化的状态更新逻辑
+        """更新系统状态（通过 SystemState 属性操作）"""
         action_impact = np.mean(action) if len(action) > 0 else 0.0
-        
+        # 这里假定 SystemState 有相关属性
         if role == 'doctors':
-            self.system_state['medical_quality'] += action_impact * 0.1
-            self.system_state['operational_efficiency'] += action_impact * 0.05
+            if hasattr(self.system_state, 'medical_quality'):
+                self.system_state.medical_quality += action_impact * 0.1
+            if hasattr(self.system_state, 'operational_efficiency'):
+                self.system_state.operational_efficiency += action_impact * 0.05
         elif role == 'interns':
-            self.system_state['education_effectiveness'] += action_impact * 0.1
-            self.system_state['medical_quality'] += action_impact * 0.05
+            if hasattr(self.system_state, 'education_effectiveness'):
+                self.system_state.education_effectiveness += action_impact * 0.1
+            if hasattr(self.system_state, 'medical_quality'):
+                self.system_state.medical_quality += action_impact * 0.05
         elif role == 'accountants':
-            self.system_state['financial_health'] += action_impact * 0.1
-            self.system_state['resource_utilization'] += action_impact * 0.08
+            if hasattr(self.system_state, 'financial_health'):
+                self.system_state.financial_health += action_impact * 0.1
+            if hasattr(self.system_state, 'resource_utilization'):
+                self.system_state.resource_utilization += action_impact * 0.08
         elif role == 'patients':
-            self.system_state['patient_satisfaction'] += action_impact * 0.1
+            if hasattr(self.system_state, 'patient_satisfaction'):
+                self.system_state.patient_satisfaction += action_impact * 0.1
         elif role == 'government':
-            # 政府行动影响整体效率和合规性
-            self.system_state['operational_efficiency'] += action_impact * 0.06
-            self.system_state['financial_health'] += action_impact * 0.04
-        
+            if hasattr(self.system_state, 'operational_efficiency'):
+                self.system_state.operational_efficiency += action_impact * 0.06
+            if hasattr(self.system_state, 'financial_health'):
+                self.system_state.financial_health += action_impact * 0.04
         # 确保状态值在合理范围内
-        for key in self.system_state:
-            self.system_state[key] = np.clip(self.system_state[key], 0.1, 1.0)
+        for attr in ['resource_utilization', 'financial_health', 'patient_satisfaction', 'medical_quality', 'education_effectiveness', 'operational_efficiency']:
+            if hasattr(self.system_state, attr):
+                val = getattr(self.system_state, attr)
+                setattr(self.system_state, attr, float(np.clip(val, 0.1, 1.0)))
     
     def _handle_crises(self):
         """处理危机场景"""

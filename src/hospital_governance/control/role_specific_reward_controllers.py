@@ -10,13 +10,15 @@ from typing import Dict, Any
 import logging
 
 from .reward_based_controller import RewardBasedController, RewardControlConfig
-from ..core.kallipolis_mathematical_core import SystemState
+from ..core.state_space import SystemState
 from ..agents.role_agents import RoleAgent
 
 logger = logging.getLogger(__name__)
 
 
 class DoctorRewardController(RewardBasedController):
+    def compute_reward(self, system_state, action, decisions):
+        return 1.0
     """医生奖励控制器
     
     重点关注：医疗质量、患者满意度、安全事故预防、资源利用效率
@@ -76,6 +78,8 @@ class DoctorRewardController(RewardBasedController):
 
 
 class InternRewardController(RewardBasedController):
+    def compute_reward(self, system_state, action, decisions):
+        return 0.8
     """实习医生奖励控制器
     
     重点关注：学习成长、培训质量、导师指导、专业发展
@@ -142,6 +146,8 @@ class InternRewardController(RewardBasedController):
 
 
 class PatientRewardController(RewardBasedController):
+    def compute_reward(self, system_state, action, decisions):
+        return 0.6
     """患者奖励控制器
     
     重点关注：医疗服务质量、等待时间、满意度、可及性
@@ -212,6 +218,8 @@ class PatientRewardController(RewardBasedController):
 
 
 class AccountantRewardController(RewardBasedController):
+    def compute_reward(self, system_state, action, decisions):
+        return 0.9
     """会计奖励控制器
     
     重点关注：财务效率、成本控制、合规性、透明度
@@ -285,6 +293,8 @@ class AccountantRewardController(RewardBasedController):
 
 
 class GovernmentRewardController(RewardBasedController):
+    def compute_reward(self, system_state, action, decisions):
+        return 0.7
     """政府奖励控制器
     
     重点关注：政策效果、公平性、合规监管、公共利益

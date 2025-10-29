@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass
 
 from .distributed_reward_control import DistributedRewardControlSystem, DistributedRewardControlConfig
-from .reward_based_controller import RewardBasedController
+from .reward_based_controller import RewardBasedController, RewardControlConfig
 from ..core.kallipolis_mathematical_core import SystemState
 from ..agents.role_agents import RoleAgent
 

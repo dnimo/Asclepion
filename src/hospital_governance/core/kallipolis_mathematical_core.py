@@ -11,12 +11,15 @@ Kallipolis Medical Republic - 数理推导严格实现模块 (重构版本)
 5. 神圣法典动态演化
 """
 
+
 import numpy as np
 import scipy.linalg as la
 from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import logging
+from hospital_governance.core.state_space import StateSpace, SystemState
+from hospital_governance.stability.lyapunov_analysis import LyapunovAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -454,73 +457,6 @@ class Agent:
         # 更新参数
         self.theta += self.learning_rate * policy_gradient
 
-class LyapunovAnalyzer:
-    """李雅普诺夫稳定性分析器 - 支持16维状态空间和5个智能体"""
-    
-    def __init__(self, state_dim: int = 16, num_agents: int = 5, param_dim: int = 8):
-        self.state_dim = state_dim
-        self.num_agents = num_agents
-        self.param_dim = param_dim
-        
-        # 李雅普诺夫函数参数
-        self.P = np.eye(state_dim)  # 状态权重矩阵
-        self.Q = [np.eye(param_dim) for _ in range(num_agents)]  # 策略参数权重矩阵
-        
-    def compute_lyapunov_function(self, state: SystemState, agents: List[Agent], 
-                                 ideal_state: SystemState, ideal_params: List[np.ndarray]) -> float:
-        """计算李雅普诺夫函数 V(z)"""
-        x = state.to_vector()
-        x_star = ideal_state.to_vector()
-        
-        # 状态偏差项
-        state_term = (x - x_star).T @ self.P @ (x - x_star)
-        
-        # 策略参数偏差项
-        param_term = 0.0
-        for i, agent in enumerate(agents):
-            if i < len(ideal_params):
-                theta_diff = agent.theta - ideal_params[i]
-                param_term += theta_diff.T @ self.Q[i] @ theta_diff
-        
-        return state_term + param_term
-    
-    def analyze_stability(self, trajectory: List[Tuple[SystemState, List[np.ndarray]]]) -> Dict:
-        """分析系统稳定性"""
-        if len(trajectory) < 2:
-            return {'stable': False, 'reason': 'insufficient_data'}
-        
-        # 计算李雅普诺夫函数值序列
-        v_values = []
-        ideal_state = trajectory[-1][0]  # 假设最终状态为理想状态
-        ideal_params = trajectory[-1][1]
-        
-        for state, params in trajectory:
-            # 模拟智能体对象
-            mock_agents = []
-            for i, param in enumerate(params):
-                agent = Agent(f'agent_{i}', 'mock')
-                agent.theta = param
-                mock_agents.append(agent)
-            
-            v = self.compute_lyapunov_function(state, mock_agents, ideal_state, ideal_params)
-            v_values.append(v)
-        
-        # 检查单调递减性
-        is_decreasing = all(v_values[i] >= v_values[i+1] for i in range(len(v_values)-1))
-        
-        # 计算收敛率
-        if len(v_values) > 1:
-            convergence_rate = np.mean([abs(v_values[i] - v_values[i+1]) / v_values[i] 
-                                      for i in range(len(v_values)-1) if v_values[i] > 0])
-        else:
-            convergence_rate = 0.0
-        
-        return {
-            'stable': is_decreasing,
-            'convergence_rate': convergence_rate,
-            'lyapunov_values': v_values,
-            'final_value': v_values[-1] if v_values else 0.0
-        }
 
 class KallipolisMedicalSystem:
     """Kallipolis医疗共和国系统 - 数理推导完整实现 (重构版本)"""
@@ -530,7 +466,6 @@ class KallipolisMedicalSystem:
         self.holy_code = HolyCode()
         self.agents: List[Agent] = []
         self.lyapunov_analyzer = LyapunovAnalyzer(16, 5, 8)  # 16维状态，5个智能体，8维参数
-        
         # 16维系统状态初始化
         self.current_state = SystemState(
             medical_resource_utilization=0.7,
@@ -705,10 +640,9 @@ class KallipolisMedicalSystem:
         return np.clip(utility, 0, 1)
     
     def analyze_system_stability(self) -> Dict:
-        """分析系统稳定性"""
+        """分析系统稳定性（调用 stability/lyapunov_analysis.py 实现）"""
         if len(self.trajectory) < 10:
             return {'error': 'insufficient_trajectory_data'}
-        
         return self.lyapunov_analyzer.analyze_stability(self.trajectory[-50:])
     
     def get_performance_metrics(self) -> Dict:

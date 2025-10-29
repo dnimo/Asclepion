@@ -14,11 +14,13 @@ import yaml
 - 危机响应参考：紧急情况下的特殊目标
 """
 
+
 import numpy as np
 from typing import Dict, List, Any, Optional, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import warnings
+from hospital_governance.core.state_space import StateSpaceDefinition
 
 class ReferenceType(Enum):
     """参考值类型"""
@@ -40,8 +42,12 @@ class ReferenceConfig:
 class ReferenceGenerator:
     """参考信号生成器 - 动态生成理想状态"""
     
-    def __init__(self, state_space, config: ReferenceConfig):
-        self.state_space = state_space
+    def __init__(self, state_space=None, config: ReferenceConfig=None):
+        # 如果未传入，则使用统一的 StateSpaceDefinition
+        if state_space is None:
+            self.state_space = StateSpaceDefinition()
+        else:
+            self.state_space = state_space
         self.config = config
         self.current_reference = self._initialize_reference()
         self.reference_history: List[np.ndarray] = [self.current_reference.copy()]

@@ -5,12 +5,21 @@
 
 from .role_agents import (RoleAgent, RoleManager, 
                          DoctorAgent, InternAgent,
-                         PatientAgent, AccountantAgent, GovernmentAgent)
+                         PatientAgent, AccountantAgent, GovernmentAgent,
+                         AgentConfig, AgentState, SystemState)
 # behavior_models removed - using MADDPG + LLM architecture instead
-from .learning_models import (LearningModel, MADDPGModel, DQNModel,
-                             BaseNetwork, Actor, Critic)
+from .learning_models import (
+    Actor, CentralizedCritic,
+    FixedLLMCandidateGenerator, NaturalLanguageActionParser,
+    LLMGenerationResult, LLM_PARAMETERS_FROZEN
+)
 from .llm_action_generator import (
     LLMConfig, BaseLLMProvider, MockLLMProvider, LLMActionGenerator
+)
+from .report3_agent import (Report3Agent, create_report3_agent)
+from .semantic_critic import (
+    SemanticEncoder, SemanticCritic, SemanticCriticTrainer,
+    SemanticReplayBuffer, SemanticTransition, create_augmented_state
 )
 from .interaction_engine import (ExperienceReplay,
                                 KallipolisInteractionEngine, CrisisScenario)
@@ -24,6 +33,14 @@ __all__ = [
     # 角色智能体
     'RoleAgent', 'RoleManager', 
     'DoctorAgent', 'InternAgent', 'PatientAgent', 'AccountantAgent', 'GovernmentAgent',
+    'AgentConfig', 'AgentState', 'SystemState',
+    
+    # Report 3 架构
+    'Report3Agent', 'create_report3_agent',
+    'FixedLLMCandidateGenerator', 'NaturalLanguageActionParser',
+    'LLMGenerationResult', 'LLM_PARAMETERS_FROZEN',
+    'SemanticEncoder', 'SemanticCritic', 'SemanticCriticTrainer',
+    'SemanticReplayBuffer', 'SemanticTransition', 'create_augmented_state',
     
     # Behavior models system (removed - using MADDPG + LLM instead)
     # 'BehaviorType', 'BehaviorParameters', 'BehaviorState', 'BaseBehaviorModel',
@@ -31,8 +48,7 @@ __all__ = [
     # 'SocialBehaviorModel', 'AdaptiveBehaviorModel', 'BehaviorModelFactory', 'BehaviorModelManager',
     
     # 学习模型
-    'LearningModel', 'MADDPGModel', 'DQNModel', 'BaseNetwork',
-    'Actor', 'Critic',
+    'Actor', 'CentralizedCritic',
     
     # LLM集成
     'LLMConfig', 'BaseLLMProvider', 'MockLLMProvider', 'LLMActionGenerator',

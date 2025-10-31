@@ -4,11 +4,11 @@ from typing import Dict, List, Any, Tuple
 from collections import deque
 import random
 from dataclasses import dataclass
-from hospital_governance.control.role_specific_reward_controllers import (
+from ..control.role_specific_reward_controllers import (
     DoctorRewardController, InternRewardController, PatientRewardController, AccountantRewardController, GovernmentRewardController
 )
-from hospital_governance.control.reward_based_controller import RewardBasedController, RewardControlConfig
-from hospital_governance.core.kallipolis_mathematical_core import SystemState
+from ..control.reward_based_controller import RewardBasedController, RewardControlConfig
+from ..core.kallipolis_mathematical_core import SystemState
 
 @dataclass
 class CrisisScenario:
@@ -255,8 +255,6 @@ class KallipolisInteractionEngine:
             rewards[role] = reward
             self._update_system_state(role, action, parliament_decisions)
         return rewards
-    
-    # 奖励计算逻辑已迁移至 control 模块
     
     def _update_system_state(self, role: str, action: np.ndarray,
                            decisions: Dict[str, Any]):

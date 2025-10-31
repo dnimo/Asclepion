@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import copy
 
 from .role_agents import RoleAgent, RoleManager
-from .learning_models import MADDPGModel
+## MADDPGModel已移除，PPO-only架构无需此导入
 from .llm_action_generator import LLMActionGenerator, LLMConfig
 
 
@@ -64,6 +64,15 @@ class MultiAgentInteractionEngine:
         
         # 1. 获取各智能体的观测
         observations = self._get_agent_observations(system_state, context)
+        # 注入全局16维状态给每个agent（供价值网络评估环境级价值）
+        try:
+            for role, agent in self.role_manager.agents.items():
+                if hasattr(agent, 'set_global_state'):
+                    # system_state这里是np.ndarray，需确保长度为16
+                    if isinstance(system_state, np.ndarray) and system_state.shape[0] >= 16:
+                        agent.set_global_state(system_state[:16])
+        except Exception:
+            pass
         
         # 2. 生成初始行动
         initial_actions = self._generate_initial_actions(observations, context, training)

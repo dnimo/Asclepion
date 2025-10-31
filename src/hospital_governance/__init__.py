@@ -40,8 +40,7 @@ from .agents.role_agents import (RoleAgent, RoleManager,
                                 DoctorAgent, InternAgent,
                                 PatientAgent, AccountantAgent, GovernmentAgent)
 # behavior_models removed - using MADDPG + LLM architecture instead
-from .agents.learning_models import (LearningModel, MADDPGModel, DQNModel,
-                                   BaseNetwork, Actor, Critic)
+from .agents.learning_models import Actor
 from .agents.llm_action_generator import LLMActionGenerator
 from .agents.interaction_engine import KallipolisInteractionEngine
 from .agents.multi_agent_coordinator import MultiAgentInteractionEngine

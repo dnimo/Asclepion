@@ -18,96 +18,12 @@ from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 import logging
-from hospital_governance.core.state_space import StateSpace, SystemState
-from hospital_governance.stability.lyapunov_analysis import LyapunovAnalyzer
+from .state_space import StateSpace, SystemState
+from ..stability.lyapunov_analysis import LyapunovAnalyzer
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class SystemState:
-    """系统状态 x(t) ∈ ℝ^16 - 扩展的16维状态空间"""
-    # 核心医疗指标 (x_1 到 x_4)
-    medical_resource_utilization: float  # x₁: 医疗资源利用率
-    patient_waiting_time: float         # x₂: 患者等待时间  
-    financial_indicator: float          # x₃: 财务健康指标
-    ethical_compliance: float           # x₄: 伦理合规度
-    
-    # 教育和培训指标 (x_5 到 x_8)
-    education_training_quality: float   # x₅: 教育培训质量
-    intern_satisfaction: float          # x₆: 实习生满意度
-    professional_development: float     # x₇: 职业发展指数
-    mentorship_effectiveness: float     # x₈: 指导效果
-    
-    # 患者服务指标 (x_9 到 x_12)
-    patient_satisfaction: float         # x₉: 患者满意度
-    service_accessibility: float        # x₁₀: 服务可及性
-    care_quality_index: float          # x₁₁: 护理质量指数
-    safety_incident_rate: float        # x₁₂: 安全事故率(反向)
-    
-    # 系统运营指标 (x_13 到 x_16)
-    operational_efficiency: float       # x₁₃: 运营效率
-    staff_workload_balance: float      # x₁₄: 员工工作负荷平衡
-    crisis_response_capability: float   # x₁₅: 危机响应能力
-    regulatory_compliance_score: float  # x₁₆: 监管合规分数
-    
-    def to_vector(self) -> np.ndarray:
-        """转换为16维状态向量"""
-        return np.array([
-            self.medical_resource_utilization,
-            self.patient_waiting_time,
-            self.financial_indicator,
-            self.ethical_compliance,
-            self.education_training_quality,
-            self.intern_satisfaction,
-            self.professional_development,
-            self.mentorship_effectiveness,
-            self.patient_satisfaction,
-            self.service_accessibility,
-            self.care_quality_index,
-            self.safety_incident_rate,
-            self.operational_efficiency,
-            self.staff_workload_balance,
-            self.crisis_response_capability,
-            self.regulatory_compliance_score
-        ])
-    
-    @classmethod
-    def from_vector(cls, x: np.ndarray) -> 'SystemState':
-        """从16维向量构造系统状态"""
-        if len(x) < 16:
-            # 如果输入向量不够16维，用默认值填充
-            x_extended = np.zeros(16)
-            x_extended[:len(x)] = x
-            x_extended[len(x):] = 0.5  # 默认值
-            x = x_extended
-            
-        return cls(
-            medical_resource_utilization=x[0],
-            patient_waiting_time=x[1],
-            financial_indicator=x[2],
-            ethical_compliance=x[3],
-            education_training_quality=x[4],
-            intern_satisfaction=x[5],
-            professional_development=x[6],
-            mentorship_effectiveness=x[7],
-            patient_satisfaction=x[8],
-            service_accessibility=x[9],
-            care_quality_index=x[10],
-            safety_incident_rate=x[11],
-            operational_efficiency=x[12],
-            staff_workload_balance=x[13],
-            crisis_response_capability=x[14],
-            regulatory_compliance_score=x[15]
-        )
-    
-    def get_component_names(self) -> List[str]:
-        """获取状态分量名称"""
-        return [
-            '医疗资源利用率', '患者等待时间', '财务健康指标', '伦理合规度',
-            '教育培训质量', '实习生满意度', '职业发展指数', '指导效果',
-            '患者满意度', '服务可及性', '护理质量指数', '安全事故率',
-            '运营效率', '员工工作负荷平衡', '危机响应能力', '监管合规分数'
-        ]
+## SystemState 统一从 state_space.py 导入，无需重复定义
 
 @dataclass
 class HolyCodeRule:
@@ -465,7 +381,7 @@ class KallipolisMedicalSystem:
         # 系统组件
         self.holy_code = HolyCode()
         self.agents: List[Agent] = []
-        self.lyapunov_analyzer = LyapunovAnalyzer(16, 5, 8)  # 16维状态，5个智能体，8维参数
+        
         # 16维系统状态初始化
         self.current_state = SystemState(
             medical_resource_utilization=0.7,
@@ -507,7 +423,7 @@ class KallipolisMedicalSystem:
             ('intern', '实习医生'), 
             ('patient', '患者代表'),
             ('accountant', '会计'),
-            ('government', '政府代理')  # 新增政府代理
+            ('government', '政府代理')
         ]
         
         for agent_id, role in agent_configs:

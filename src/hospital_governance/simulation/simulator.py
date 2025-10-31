@@ -68,6 +68,18 @@ except ImportError as e:
     logger.warning(f"神圣法典系统导入失败: {e}")
     HAS_HOLY_CODE = False
 
+# 导入PPO学习模型
+try:
+    from ..agents.learning_models import RolloutBuffer, AgentStep
+    HAS_PPO_MODELS = True
+except ImportError as e:
+    logger = logging.getLogger(__name__)
+    logger.warning(f"PPO模型导入失败: {e}")
+    HAS_PPO_MODELS = False
+    # 创建占位类
+    RolloutBuffer = None
+    AgentStep = None
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -98,11 +110,11 @@ class SimulationConfig:
     system_matrices_config: Optional[Dict] = None
     performance_weights: Optional[Dict] = None
     
-    # MADDPG训练配置
-    maddpg_training_episodes: int = 100
-    maddpg_batch_size: int = 32
-    maddpg_model_save_path: str = 'models/maddpg'
-    maddpg_buffer_size: int = 10000
+    # PPO训练配置（如有需要可扩展）
+    ppo_training_episodes: int = 100
+    ppo_batch_size: int = 32
+    ppo_model_save_path: str = 'models/ppo'
+    ppo_buffer_size: int = 10000
 
 class KallipolisSimulator:
     """Kallipolis医疗共和国仿真器 - 重构版本
@@ -117,16 +129,13 @@ class KallipolisSimulator:
     
     def __init__(self, config: SimulationConfig = None):
         self.config = config or SimulationConfig()
-        
         # 仿真状态
         self.current_step = 0
         self.simulation_time = 0.0
         self.is_running = False
         self.is_paused = False
-        
         # 数据回调机制
         self.data_callback: Optional[Callable] = None
-        
         # 历史记录
         self.history = {
             'decisions': [],
@@ -136,7 +145,6 @@ class KallipolisSimulator:
             'parliament': [],
             'rewards': []
         }
-        
         # 核心系统组件
         self.agent_registry: Optional[AgentRegistry] = None
         self.reward_control_system: Optional[DistributedRewardControlSystem] = None
@@ -144,18 +152,15 @@ class KallipolisSimulator:
         self.core_system: Optional[KallipolisMedicalSystem] = None
         self.system_dynamics: Optional[SystemDynamics] = None
         self.state_space: Optional[StateSpace] = None
-        self.scenario_runner: Optional[ScenarioRunner] = None  # 添加场景运行器
-        
-        # MADDPG训练组件
-        self.maddpg_model: Optional[Any] = None
-        self.experience_buffer: List[Dict] = []
-        self.is_training_maddpg: bool = False
+        self.scenario_runner: Optional[ScenarioRunner] = None
+        # PPO经验回放缓冲区
+        self.rollout_buffer: Optional[RolloutBuffer] = None
         self.parliament_waiting: bool = False
         self.last_parliament_step: int = 0
-        
+        # PPO经验存储
+        self.experience_buffer: List[Dict[str, Any]] = []
         # 初始化核心组件
         self._initialize_components()
-        
         logger.info("🏥 KallipolisSimulator重构版本初始化完成")
     
     def _initialize_components(self):
@@ -179,8 +184,8 @@ class KallipolisSimulator:
             # 6. 初始化场景运行器
             self._initialize_scenario_runner()
             
-            # 7. 初始化MADDPG模型
-            self._initialize_maddpg_model()
+            # 7. 初始化PPO学习系统
+            self._initialize_ppo_learning_system()
             
             logger.info("✅ 所有核心组件初始化完成")
             
@@ -228,14 +233,26 @@ class KallipolisSimulator:
             # 初始化核心医疗系统
             self.core_system = KallipolisMedicalSystem()
             
-            # 获取系统矩阵
-            system_matrices = SystemMatrixGenerator.generate_nominal_matrices()
+            # 获取系统矩阵（优先从YAML加载，失败则回退到标称矩阵）
+            try:
+                matrices_cfg = self.config.system_matrices_config or {}
+                yaml_path = matrices_cfg.get('path', 'config/system_matrices.yaml')
+                scenario = matrices_cfg.get('scenario') if isinstance(matrices_cfg, dict) else None
+                system_matrices = SystemMatrixGenerator.load_from_yaml(
+                    yaml_path=yaml_path,
+                    scenario=scenario,
+                    n=16, m=17, p=6
+                )
+                logger.info(f"✅ 已从YAML加载系统矩阵: {yaml_path} (scenario={scenario})")
+            except Exception as load_err:
+                logger.warning(f"⚠️ 从YAML加载系统矩阵失败，使用标称矩阵: {load_err}")
+                system_matrices = SystemMatrixGenerator.generate_nominal_matrices()
             
             # 初始化系统动力学
             self.system_dynamics = SystemDynamics(system_matrices)
             
-            # 初始化状态空间
-            initial_state = self.core_system.current_state.to_vector()
+            # 初始化状态空间（传入SystemState对象，而非向量）
+            initial_state = self.core_system.current_state
             self.state_space = StateSpace(initial_state)
             
             logger.info("✅ 核心数学系统初始化完成")
@@ -335,6 +352,24 @@ class KallipolisSimulator:
             logger.error(f"❌ 场景运行器初始化失败: {e}")
             self.scenario_runner = None
     
+    def _initialize_ppo_learning_system(self):
+        """初始化PPO学习系统"""
+        if not HAS_PPO_MODELS:
+            logger.warning("⚠️ PPO学习模型模块不可用，跳过初始化")
+            return
+        
+        try:
+            # PPO模型将在需要时（训练模式）动态初始化
+            # 这里只是验证PPO组件可用性并准备RolloutBuffer
+            if self.config.enable_learning:
+                logger.info("✅ PPO学习系统准备就绪（RolloutBuffer将在收集经验时初始化）")
+                # RolloutBuffer会在_collect_experience_data中根据智能体数量动态初始化
+            else:
+                logger.info("ℹ️ 学习模式未启用，PPO系统待命")
+                
+        except Exception as e:
+            logger.error(f"❌ PPO学习系统初始化失败: {e}")
+    
     def _validate_component_integration(self):
         """验证组件集成状态"""
         status = {
@@ -342,7 +377,9 @@ class KallipolisSimulator:
             'core_math_system': self.core_system is not None,
             'reward_control': self.reward_control_system is not None,
             'holy_code': self.holy_code_manager is not None,
-            'system_dynamics': self.system_dynamics is not None
+            'system_dynamics': self.system_dynamics is not None,
+            'scenario_runner': self.scenario_runner is not None,
+            'ppo_learning': HAS_PPO_MODELS and self.config.enable_learning
         }
         
         total_components = len(status)
@@ -407,20 +444,11 @@ class KallipolisSimulator:
             self._update_system_state()
             step_data['system_state'] = self._get_current_state_dict()
             
-            # 2. 智能体协作决策（LLM+角色智能体 + MADDPG协作）
+            # 2. 智能体协作决策（LLM+角色智能体）
             llm_decisions = None
-            maddpg_decisions = None
-            
-            # 获取LLM+角色智能体决策
             if self.agent_registry and self.config.enable_llm_integration:
-                llm_decisions = self._process_llm_agent_decisions()
-            
-            # 获取MADDPG决策
-            if self.maddpg_model and self.config.enable_learning and not self.is_training_maddpg:
-                maddpg_decisions = self._get_maddpg_decisions()
-            
-            # 融合决策（优先使用LLM+角色智能体，由MADDPG补充）
-            step_data['agent_actions'] = self._combine_decisions(llm_decisions, maddpg_decisions)
+                llm_decisions = self._process_agent_decisions()
+            step_data['agent_actions'] = llm_decisions if llm_decisions else self._process_fallback_decisions()
             
             # 3. 奖励计算和分发
             if self.reward_control_system:
@@ -428,15 +456,10 @@ class KallipolisSimulator:
             else:
                 step_data['rewards'] = self._compute_fallback_rewards()
             
-            # 4. 处理议会会议（考虑MADDPG训练状态）
+            # 4. 处理议会会议
             if self._should_hold_parliament():
                 step_data['parliament_meeting'] = True
                 step_data['parliament_result'] = self._run_parliament_meeting(step_data)
-                # 议会结束后启动MADDPG训练
-                self._start_maddpg_training_after_parliament()
-            elif self.is_training_maddpg:
-                step_data['parliament_waiting'] = True
-                step_data['training_status'] = self._get_training_status()
             
             # 5. 处理危机事件
             if self.config.enable_crises:
@@ -448,7 +471,7 @@ class KallipolisSimulator:
             # 7. 记录历史数据
             self._record_step_history(step_data)
             
-            # 8. 收集MADDPG经验数据
+            # 8. 收集PPO经验数据
             if self.config.enable_learning:
                 self._collect_experience_data(step_data)
             
@@ -473,14 +496,17 @@ class KallipolisSimulator:
                 d_t = np.random.normal(0, 0.05, 6)
                 
                 # 状态转移
-                next_state = self.system_dynamics.state_transition(current_state, u_t, d_t)
+                next_state_vector = self.system_dynamics.state_transition(current_state, u_t, d_t)
+                
+                # 转换为SystemState对象
+                next_state = SystemState.from_vector(next_state_vector)
                 
                 # 更新状态空间
                 self.state_space.update_state(next_state)
                 
                 # 更新核心系统状态
                 if self.core_system:
-                    self.core_system.current_state = SystemState.from_vector(next_state)
+                    self.core_system.current_state = next_state
                 
             except Exception as e:
                 logger.warning(f"⚠️ 系统动力学更新失败: {e}")
@@ -759,6 +785,13 @@ class KallipolisSimulator:
             'participating_agents': list(step_data['agent_actions'].keys())
         }
     
+    def _should_hold_parliament(self) -> bool:
+        """判断是否应该召开议会会议"""
+        if not self.config.enable_holy_code:
+            return False
+        # 每meeting_interval步召开一次
+        return self.current_step % self.config.meeting_interval == 0 and self.current_step > 0
+    
     def _handle_crisis_events(self) -> List[Dict[str, Any]]:
         """处理危机事件"""
         crises = []
@@ -897,7 +930,10 @@ class KallipolisSimulator:
             'holy_code': self.holy_code_manager is not None,
             'core_math': self.core_system is not None,
             'system_dynamics': self.system_dynamics is not None,
-            'state_space': self.state_space is not None
+            'state_space': self.state_space is not None,
+            'scenario_runner': self.scenario_runner is not None,
+            'ppo_learning': HAS_PPO_MODELS and self.config.enable_learning,
+            'rollout_buffer': self.rollout_buffer is not None
         }
     
     # 仿真控制方法
@@ -990,12 +1026,10 @@ class KallipolisSimulator:
         # 重置组件状态
         if self.state_space and self.core_system:
             try:
-                initial_state = self.core_system.current_state.to_vector()
-                # 直接更新状态而不是调用reset方法
-                if hasattr(self.state_space, 'update_state'):
-                    self.state_space.update_state(initial_state)
-                elif hasattr(self.state_space, '_current_state'):
-                    self.state_space._current_state = initial_state
+                # 获取初始状态（SystemState对象）
+                initial_state = self.core_system.current_state
+                # 更新状态空间
+                self.state_space.update_state(initial_state)
             except Exception as e:
                 logger.warning(f"⚠️ 状态空间重置失败: {e}")
         
@@ -1014,7 +1048,6 @@ class KallipolisSimulator:
                     'is_running': self.is_running,
                     'is_paused': self.is_paused,
                     'version': 'refactored',
-                    'is_training_maddpg': self.is_training_maddpg,
                     'parliament_waiting': self.parliament_waiting
                 },
                 'component_status': component_status,
@@ -1028,17 +1061,16 @@ class KallipolisSimulator:
                 },
                 'agent_registry_status': self.agent_registry.get_registry_status() if self.agent_registry else None,
                 'reward_control_status': 'active' if self.reward_control_system else 'inactive',
-                'maddpg_status': {
-                    'is_training': self.is_training_maddpg,
-                    'buffer_size': len(self.experience_buffer),
-                    'model_loaded': self.maddpg_model is not None
+                'ppo_status': {
+                    'buffer_size': len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0,
+                    'rollout_buffer_initialized': self.rollout_buffer is not None
                 },
                 'config': {
                     'max_steps': self.config.max_steps,
                     'enable_llm': self.config.enable_llm_integration,
                     'enable_reward_control': self.config.enable_reward_control,
                     'llm_provider': self.config.llm_provider,
-                    'maddpg_training_episodes': self.config.maddpg_training_episodes
+                    'ppo_training_episodes': getattr(self.config, 'ppo_training_episodes', 100)
                 }
             }
         except Exception as e:
@@ -1049,322 +1081,84 @@ class KallipolisSimulator:
                 'component_status': self._get_component_status()
             }
     
-    # MADDPG训练相关方法
-    def _initialize_maddpg_model(self):
-        """初始化MADDPG模型"""
-        try:
-            from ..agents.learning_models import MADDPGModel
-            
-            # 定义智能体的状态和动作维度
-            state_dim = 16  # 16维状态空间
-            action_dims = {
-                'doctors': 4,
-                'interns': 3, 
-                'patients': 3,
-                'accountants': 3,
-                'government': 3
-            }
-            
-            self.maddpg_model = MADDPGModel(
-                state_dim=state_dim,
-                action_dims=action_dims,
-                hidden_dim=128,
-                actor_lr=0.001,
-                critic_lr=0.002
-            )
-            
-            # 尝试加载预训练模型
-            try:
-                import os
-                if os.path.exists(self.config.maddpg_model_save_path):
-                    self.maddpg_model.load_models(self.config.maddpg_model_save_path)
-                    logger.info(f"✅ MADDPG模型加载成功: {self.config.maddpg_model_save_path}")
-                else:
-                    logger.info("🆕 无预训练MADDPG模型，使用随机初始化")
-            except Exception as e:
-                logger.warning(f"⚠️ MADDPG模型加载失败: {e}")
-            
-            logger.info("✅ MADDPG模型初始化完成")
-            
-        except ImportError as e:
-            logger.warning(f"⚠️ MADDPG模块导入失败: {e}")
-            self.maddpg_model = None
-        except Exception as e:
-            logger.error(f"❌ MADDPG模型初始化失败: {e}")
-            self.maddpg_model = None
-    
-    def _should_hold_parliament(self) -> bool:
-        """判断是否应该召开议会"""
-        # 如果正在训练MADDPG，议会等待
-        if self.is_training_maddpg:
-            self.parliament_waiting = True
-            return False
-        
-        # 检查是否到了会议时间
-        if self.current_step % self.config.meeting_interval == 0 and self.current_step > 0:
-            return True
-        
-        # 检查是否有延迟的议会需要召开
-        if self.parliament_waiting and not self.is_training_maddpg:
-            self.parliament_waiting = False
-            return True
-        
-        return False
-    
-    def _start_maddpg_training_after_parliament(self):
-        """议会结束后启动MADDPG训练"""
-        if not self.maddpg_model or not self.config.enable_learning:
-            logger.info("📚 MADDPG训练已禁用或模型不可用")
-            return
-        
-        if len(self.experience_buffer) < self.config.maddpg_batch_size:
-            logger.info(f"📊 经验数据不足({len(self.experience_buffer)}/{self.config.maddpg_batch_size})，跳过训练")
-            return
-        
-        self.is_training_maddpg = True
-        self.last_parliament_step = self.current_step
-        
-        logger.info(f"🎓 启动MADDPG训练 - 经验数据: {len(self.experience_buffer)}")
-        
-        # 在后台线程进行训练（简化版，实际应用中可能需要异步处理）
-        try:
-            self._train_maddpg_model()
-        except Exception as e:
-            logger.error(f"❌ MADDPG训练失败: {e}")
-            self.is_training_maddpg = False
-    
-    def _train_maddpg_model(self):
-        """训练MADDPG模型"""
-        try:
-            # 准备训练数据 - 按角色分组
-            role_batches = {}
-            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
-                role_experiences = [exp for exp in self.experience_buffer 
-                                 if exp['role'] == role and exp['next_state'] is not None]
-                if len(role_experiences) >= self.config.maddpg_batch_size:
-                    role_batches[role] = role_experiences[-self.config.maddpg_batch_size:]
-            
-            if not role_batches:
-                logger.warning("⚠️ 没有足够的训练数据")
-                return
-            
-            # 创建统一格式的训练批次
-            unified_batch = []
-            for role, experiences in role_batches.items():
-                for exp in experiences:
-                    # 确保数据格式正确
-                    unified_exp = {
-                        'role': role,
-                        'state': np.array(exp['state'], dtype=np.float32).flatten(),
-                        'action': np.array(exp['action'], dtype=np.float32).flatten(),
-                        'reward': float(exp['reward']),
-                        'next_state': np.array(exp['next_state'], dtype=np.float32).flatten(),
-                        'done': bool(exp.get('done', False))
-                    }
-                    unified_batch.append(unified_exp)
-            
-            # 训练模型
-            losses = self.maddpg_model.train(unified_batch)
-            
-            logger.info(f"🎓 MADDPG训练完成 - 损失: {losses}")
-            
-            # 保存模型
-            try:
-                self.maddpg_model.save_models(self.config.maddpg_model_save_path)
-                logger.info(f"💾 MADDPG模型已保存: {self.config.maddpg_model_save_path}")
-            except Exception as e:
-                logger.warning(f"⚠️ MADDPG模型保存失败: {e}")
-            
-            # 清理部分经验数据
-            if len(self.experience_buffer) > self.config.maddpg_buffer_size:
-                self.experience_buffer = self.experience_buffer[-self.config.maddpg_buffer_size//2:]
-            
-        except Exception as e:
-            logger.error(f"❌ MADDPG训练过程失败: {e}")
-        finally:
-            self.is_training_maddpg = False
-            logger.info("✅ MADDPG训练结束，议会可以继续")
-    
-    def _get_training_status(self) -> Dict[str, Any]:
-        """获取训练状态"""
-        return {
-            'is_training': self.is_training_maddpg,
-            'buffer_size': len(self.experience_buffer),
-            'waiting_for_training': self.parliament_waiting,
-            'last_parliament_step': self.last_parliament_step
-        }
     
     def _collect_experience_data(self, step_data: Dict[str, Any]):
-        """收集经验数据用于训练"""
+        """收集经验数据用于PPO训练"""
+        if not HAS_PPO_MODELS:
+            logger.warning("⚠️ PPO模型未导入，跳过经验收集")
+            return
+        
         try:
+            # 初始化RolloutBuffer（第一次收集时）
+            if self.rollout_buffer is None and step_data['agent_actions']:
+                n_agents = len(step_data['agent_actions'])
+                self.rollout_buffer = RolloutBuffer(n_agents, device='cpu')
+                logger.info(f"📊 初始化RolloutBuffer，智能体数量: {n_agents}")
+            
+            if self.rollout_buffer is None:
+                return
+            
             current_state = self._get_current_state_dict()
+            per_agent_steps = []
             
             # 为每个智能体收集经验
-            for role, action_data in step_data['agent_actions'].items():
+            for role_idx, (role, action_data) in enumerate(step_data['agent_actions'].items()):
                 if isinstance(action_data, dict) and 'action_vector' in action_data:
-                    # 确保action_vector是numpy数组格式
-                    action_vector = action_data['action_vector']
-                    if not isinstance(action_vector, np.ndarray):
-                        action_vector = np.array(action_vector, dtype=np.float32)
+                    obs = self._get_observation_for_role(role, current_state)
+                    action = action_data['action_vector']
                     
-                    experience = {
-                        'role': role,
-                        'state': self._get_observation_for_role(role, current_state).astype(np.float32),
-                        'action': action_vector.astype(np.float32),
-                        'reward': float(step_data['rewards'].get(role, 0.0)),
-                        'next_state': None,  # 将在下一步填充
-                        'done': False,
-                        'step': self.current_step
-                    }
+                    if isinstance(action, list):
+                        action = np.array(action, dtype=np.float32)
                     
-                    self.experience_buffer.append(experience)
+                    # PPO假设离散动作，将连续动作转换为离散索引
+                    if hasattr(action, 'shape') and len(action.shape) > 0 and action.shape[0] > 1:
+                        # 多维动作，取最大值的索引
+                        action = int(np.argmax(action))
+                    elif hasattr(action, 'shape') and action.shape == ():
+                        action = int(action)
+                    else:
+                        action = 0  # 默认动作
+                    
+                    reward = float(step_data['rewards'].get(role, 0.0))
+                    done = step_data.get('done', False) or (self.current_step >= self.config.max_steps - 1)
+                    global_state = np.array(list(current_state.values()), dtype=np.float32)
+                    logp = float(action_data.get('logp', 0.0))  # 可选，实际PPO需采集
+                    
+                    per_agent_steps.append(AgentStep(
+                        obs=obs,
+                        action=action,
+                        logp=logp,
+                        reward=reward,
+                        global_state=global_state,
+                        done=done
+                    ))
             
-            # 填充上一步的next_state
-            if len(self.experience_buffer) >= 2:
-                for i in range(len(self.experience_buffer)-len(step_data['agent_actions']), len(self.experience_buffer)):
-                    if i > 0 and self.experience_buffer[i-1]['next_state'] is None:
-                        self.experience_buffer[i-1]['next_state'] = self.experience_buffer[i]['state']
-        
+            # 添加到RolloutBuffer
+            if per_agent_steps:
+                self.rollout_buffer.add(per_agent_steps)
+                logger.debug(f"✅ 收集了 {len(per_agent_steps)} 个智能体的经验数据")
+            
         except Exception as e:
             logger.warning(f"⚠️ 收集经验数据失败: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
     
     def _get_observation_for_role(self, role: str, current_state: Dict[str, float]) -> np.ndarray:
-        """为特定角色获取观测"""
+        """为智能体生成观测"""
         if self.state_space:
-            return self.state_space.get_state_vector().astype(np.float32)
+            # 使用完整的16维状态空间
+            return self.state_space.get_state_vector()
         else:
             # 降级到简化观测
-            state_values = list(current_state.values())
-            # 填充到16维
-            while len(state_values) < 16:
-                state_values.append(0.0)
-            return np.array(state_values[:16], dtype=np.float32)
-    
-    def _process_llm_agent_decisions(self) -> Dict[str, Any]:
-        """处理LLM+角色智能体的自动决策生成"""
-        actions = {}
-        
-        try:
-            agents = self.agent_registry.get_all_agents()
-            current_state = self._get_current_state_dict()
-            
-            for role, agent in agents.items():
-                try:
-                    # 生成观测
-                    observation = self._generate_observation_for_agent(role)
-                    
-                    # 使用LLM增强的决策
-                    if hasattr(agent, 'llm_generator') and agent.llm_generator:
-                        # 构建上下文
-                        context = {
-                            'role': role,
-                            'observation': observation.tolist(),
-                            'system_state': current_state,
-                            'step': self.current_step,
-                            'simulation_time': self.simulation_time
-                        }
-                        
-                        # LLM生成动作和推理
-                        holy_code_state = self.holy_code_manager.get_current_state() if self.holy_code_manager else {}
-                        llm_response = agent.llm_generator.generate_action_sync(
-                            role=role,
-                            observation=observation,
-                            holy_code_state=holy_code_state,
-                            context={**context, 'system_state': current_state}
-                        )
-                        
-                        # 解析LLM响应
-                        action_vector, reasoning = self._parse_llm_response(llm_response, role)
-                        
-                        actions[role] = {
-                            'action_vector': action_vector,
-                            'agent_type': 'LLM_Enhanced',
-                            'confidence': 0.85,
-                            'reasoning': reasoning,
-                            'llm_response': llm_response[:200] + '...' if len(llm_response) > 200 else llm_response
-                        }
-                        
-                    else:
-                        # 使用角色智能体的默认决策
-                        action = agent.sample_action(observation)
-                        
-                        actions[role] = {
-                            'action_vector': action.tolist() if hasattr(action, 'tolist') else action,
-                            'agent_type': 'RoleAgent',
-                            'confidence': 0.7,
-                            'reasoning': f'{role}基于角色特征的决策'
-                        }
-                        
-                except Exception as e:
-                    logger.warning(f"⚠️ LLM+角色智能体 {role} 决策失败: {e}")
-                    # 降级到简单决策
-                    actions[role] = {
-                        'action_vector': [0.0] * 3,
-                        'agent_type': 'Fallback',
-                        'confidence': 0.5,
-                        'reasoning': f'{role}使用默认行动'
-                    }
-            
-            logger.info(f"🤖 LLM+角色智能体生成决策: {list(actions.keys())}")
-            return actions
-            
-        except Exception as e:
-            logger.error(f"❌ LLM+角色智能体决策失败: {e}")
-            return self._process_fallback_decisions()
-    
-    def _get_maddpg_decisions(self) -> Dict[str, Any]:
-        """获取MADDPG决策（不直接使用，作为补充）"""
-        if not self.maddpg_model:
-            return None
-            
-        try:
-            # 获取各角色观测
-            observations = {}
-            current_state = self._get_current_state_dict()
-            
-            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
-                observations[role] = self._get_observation_for_role(role, current_state)
-            
-            # 使用MADDPG获取动作
-            maddpg_actions = self.maddpg_model.get_actions(observations, training=False)
-            
-            # 转换为统一格式
-            formatted_actions = {}
-            for role, action_vector in maddpg_actions.items():
-                formatted_actions[role] = {
-                    'action_vector': action_vector.tolist() if hasattr(action_vector, 'tolist') else action_vector,
-                    'agent_type': 'MADDPG_Supplement',
-                    'confidence': 0.8,
-                    'reasoning': f'{role}基于MADDPG模型的补充决策'
-                }
-            
-            return formatted_actions
-            
-        except Exception as e:
-            logger.error(f"❌ MADDPG补充决策失败: {e}")
-            return None
-    
-    def _combine_decisions(self, llm_decisions: Dict[str, Any], maddpg_decisions: Dict[str, Any]) -> Dict[str, Any]:
-        """融合LLM和MADDPG决策"""
-        if llm_decisions:
-            logger.info("🎓 使用LLM+角色智能体主导决策")
-            
-            # 如果有MADDPG补充，添加参考信息
-            if maddpg_decisions:
-                for role in llm_decisions:
-                    if role in maddpg_decisions:
-                        llm_decisions[role]['maddpg_reference'] = maddpg_decisions[role]['action_vector']
-                        llm_decisions[role]['reasoning'] += f" [参考MADDPG建议]"
-            
-            return llm_decisions
-        
-        elif maddpg_decisions:
-            logger.info("🤖 使用MADDPG补充决策")
-            return maddpg_decisions
-        
-        else:
-            logger.info("🔄 使用降级决策")
-            return self._process_fallback_decisions()
+            state_dict = current_state or self._get_current_state_dict()
+            return np.array([
+                state_dict.get('medical_quality', 0.8),
+                state_dict.get('financial_health', 0.7),
+                state_dict.get('patient_satisfaction', 0.75),
+                state_dict.get('system_stability', 0.8),
+                state_dict.get('overall_performance', 0.77),
+                0.0, 0.0, 0.0  # 填充到8维
+            ])
     
     def _parse_llm_response(self, llm_response: str, role: str) -> Tuple[List[float], str]:
         """解析LLM响应，提取动作向量和推理"""
@@ -1669,77 +1463,46 @@ class KallipolisSimulator:
         
         return None
     
-    def _use_maddpg_for_decisions(self) -> Dict[str, Any]:
-        """使用MADDPG模型进行决策"""
-        if not self.maddpg_model:
-            return self._process_fallback_decisions()
-        
+    def get_simulation_report(self) -> Dict[str, Any]:
+        """获取仿真报告"""
         try:
-            # 获取各角色观测
-            observations = {}
-            current_state = self._get_current_state_dict()
-            
-            for role in ['doctors', 'interns', 'patients', 'accountants', 'government']:
-                observations[role] = self._get_observation_for_role(role, current_state)
-            
-            # 使用MADDPG获取动作
-            actions = self.maddpg_model.get_actions(observations, training=False)
-            
-            # 转换为仿真器期望的格式
-            formatted_actions = {}
-            for role, action_vector in actions.items():
-                formatted_actions[role] = {
-                    'action_vector': action_vector.tolist() if hasattr(action_vector, 'tolist') else action_vector,
-                    'agent_type': 'MADDPG',
-                    'confidence': 0.85,
-                    'reasoning': f'{role}基于MADDPG模型决策'
-                }
-            
-            logger.info(f"🤖 使用MADDPG模型生成决策: {list(formatted_actions.keys())}")
-            return formatted_actions
-            
-        except Exception as e:
-            logger.error(f"❌ MADDPG决策失败: {e}")
-            return self._process_fallback_decisions()
-    
-    def get_current_state(self) -> Dict[str, Any]:
-        """获取当前系统状态"""
-        try:
-            # 获取核心系统状态
-            system_state = {}
-            if self.core_system:
-                system_state = self.core_system.get_current_state()
-            
-            # 获取奖励控制状态
-            reward_state = {}
-            if self.reward_control_system:
-                try:
-                    reward_state = self.reward_control_system.get_system_state()
-                except:
-                    reward_state = {'reward_system': 'available'}
-            
-            # 组合状态信息
-            current_state = {
-                'current_step': self.current_step,
-                'simulation_time': self.simulation_time,
-                'is_running': self.is_running,
-                'is_paused': self.is_paused,
-                'system_state': system_state,
-                'reward_state': reward_state,
-                'agent_count': len(self.agent_registry.get_all_agents()) if self.agent_registry else 0,
-                'experience_buffer_size': len(self.experience_buffer) if hasattr(self, 'experience_buffer') else 0,
-                'maddpg_enabled': hasattr(self, 'maddpg_model') and self.maddpg_model is not None,
-                'parliament_frequency': self.config.parliament_frequency if self.config else 0
-            }
-            
-            return current_state
-            
-        except Exception as e:
-            logger.warning(f"⚠️ 获取当前状态失败: {e}")
+            component_status = self._get_component_status()
+            active_components = sum(component_status.values())
             return {
-                'current_step': self.current_step,
-                'error': str(e)
+                'simulation_info': {
+                    'current_step': self.current_step,
+                    'simulation_time': self.simulation_time,
+                    'is_running': self.is_running,
+                    'is_paused': self.is_paused,
+                    'version': 'refactored',
+                    'parliament_waiting': self.parliament_waiting
+                },
+                'component_status': component_status,
+                'component_health': f"{active_components}/{len(component_status)}",
+                'system_state': self._get_current_state_dict(),
+                'performance_summary': {
+                    'recent_performance': self.history['performance'][-10:] if self.history['performance'] else [],
+                    'crisis_count': len(self.history['crises']),
+                    'parliament_meetings': len(self.history['parliament']),
+                    'total_decisions': len(self.history['decisions'])
+                },
+                'agent_registry_status': self.agent_registry.get_registry_status() if self.agent_registry else None,
+                'reward_control_status': 'active' if self.reward_control_system else 'inactive',
+                'ppo_status': {
+                    'buffer_size': len(self.experience_buffer)
+                },
+                'config': {
+                    'max_steps': self.config.max_steps,
+                    'enable_llm': self.config.enable_llm_integration,
+                    'enable_reward_control': self.config.enable_reward_control,
+                    'llm_provider': self.config.llm_provider,
+                    'ppo_training_episodes': getattr(self.config, 'ppo_training_episodes', 100)
+                }
             }
-
-# 导出
-__all__ = ['KallipolisSimulator', 'SimulationConfig']
+        except Exception as e:
+            logger.error(f"❌ 生成仿真报告失败: {e}")
+            return {
+                'error': str(e),
+                'current_step': self.current_step,
+                'component_status': self._get_component_status()
+            }

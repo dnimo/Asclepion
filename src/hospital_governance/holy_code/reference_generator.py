@@ -20,7 +20,7 @@ from typing import Dict, List, Any, Optional, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import warnings
-from hospital_governance.core.state_space import StateSpaceDefinition
+from ..core.state_space import StateSpaceDefinition
 
 class ReferenceType(Enum):
     """参考值类型"""

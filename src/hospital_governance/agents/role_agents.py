@@ -174,6 +174,15 @@ class RoleAgent(ABC):
         self._llm_enabled = False
         self._llm_fallback_enabled = True
         
+        # LLM-Actor决策系统（新架构）
+        self.llm_actor_system = None
+        self._llm_actor_enabled = False
+        # 价值网络/评估函数：用于对候选动作逐一打分
+        # 签名: fn(state_vec_16: np.ndarray, action_vec: np.ndarray, role: str) -> float
+        self.action_value_fn: Optional[Callable[[np.ndarray, np.ndarray, str], float]] = None
+        # 全局环境状态（16维），由上层引擎在每步决策前注入
+        self._global_state_vector: Optional[np.ndarray] = None
+        
         # 历史记录
         self.action_history = []
         self.state_history = []
@@ -186,6 +195,13 @@ class RoleAgent(ABC):
         # 基线值估计(用于方差减少)
         self.baseline = 0.0
         self.baseline_lr = 0.1
+        
+        # LLM-Actor相关统计
+        self._last_llm_result = None
+        self._last_llm_tokens = 0
+        self._last_llm_was_rejected = False
+        self._total_llm_tokens = 0
+        self._llm_call_count = 0
         
         logger.debug(f"Initialized {self.role} agent with θ shape: {self.theta.shape}")
     
@@ -253,8 +269,12 @@ class RoleAgent(ABC):
         pass
     
     def compute_reward(self, system_state: SystemState, action: int, 
-                      global_utility: float, ideal_state: SystemState) -> float:
-        """计算收益函数 R_i(x, a_i, a_{-i}) = α_i U(x) + β_i V_i(x, a_i) - γ_i D_i(x, x*)"""
+                      global_utility: float, ideal_state: SystemState,
+                      token_cost: float = 0.0, rejection_penalty: float = 0.0) -> float:
+        """计算收益函数 R_i(x, a_i, a_{-i}) = α_i U(x) + β_i V_i(x, a_i) - γ_i D_i(x, x*) - token_cost - rejection_penalty
+        
+        扩展原有收益函数，支持LLM-Actor的Token成本和拒绝惩罚
+        """
         
         # 局部价值函数 V_i
         local_value = self.compute_local_value(system_state, action)
@@ -264,10 +284,12 @@ class RoleAgent(ABC):
         ideal_vec = ideal_state.to_vector()
         deviation = np.linalg.norm(state_vec - ideal_vec)
         
-        # 组合收益
+        # 组合收益（扩展版本）
         reward = (self.alpha * global_utility + 
                  self.beta * local_value - 
-                 self.gamma * deviation)
+                 self.gamma * deviation -
+                 token_cost -  # LLM API成本
+                 rejection_penalty)  # 拒绝所有候选的惩罚
         
         return reward
     
@@ -312,24 +334,50 @@ class RoleAgent(ABC):
     def get_performance_metrics(self) -> Dict[str, float]:
         """获取性能指标"""
         if not self.reward_history:
-            return {'performance_score': self.state.performance_score}
+            metrics = {'performance_score': self.state.performance_score}
+        else:
+            recent_rewards = self.reward_history[-100:]  # 最近100步
+            metrics = {
+                'performance_score': self.state.performance_score,
+                'mean_reward': np.mean(recent_rewards),
+                'std_reward': np.std(recent_rewards),
+                'cumulative_reward': self.state.cumulative_reward,
+                'policy_norm': np.linalg.norm(self.theta),
+                'baseline_value': self.baseline,
+                'total_actions': len(self.action_history)
+            }
         
-        recent_rewards = self.reward_history[-100:]  # 最近100步
-        return {
-            'performance_score': self.state.performance_score,
-            'mean_reward': np.mean(recent_rewards),
-            'std_reward': np.std(recent_rewards),
-            'cumulative_reward': self.state.cumulative_reward,
-            'policy_norm': np.linalg.norm(self.theta),
-            'baseline_value': self.baseline,
-            'total_actions': len(self.action_history)
-        }
+        # 添加LLM统计（如果启用）
+        if self._llm_actor_enabled:
+            metrics.update(self.get_llm_statistics())
+        
+        return metrics
+
+    def set_action_value_fn(self, fn: Callable[[np.ndarray, np.ndarray, str], float]):
+        """设置外部价值网络/评估函数用于动作对整个环境的价值打分。
+        Args:
+            fn: 可调用，输入(16维全局状态, 动作向量, 角色)返回标量价值
+        """
+        self.action_value_fn = fn
+        logger.info(f"{self.role} agent registered external action value function")
+
+    def set_global_state(self, state_vec_16: np.ndarray):
+        """设置当前全局环境状态（长度必须为16），供价值网络评估使用。"""
+        if state_vec_16 is None or len(state_vec_16) != 16:
+            raise ValueError("set_global_state expects a length-16 numpy array")
+        self._global_state_vector = state_vec_16.astype(float)
     
     # 继承类需要实现的抽象方法保持原有接口
     def select_action(self, observation: np.ndarray, 
                      holy_code_guidance: Optional[Dict[str, Any]] = None,
                      training: bool = False) -> np.ndarray:
-        """选择动作 - 兼容原有接口"""
+        """选择动作 - 兼容原有接口，支持LLM-Actor模式"""
+        
+        # 如果启用了LLM-Actor系统
+        if self._llm_actor_enabled and self.llm_actor_system:
+            return self._select_action_llm_actor(observation, holy_code_guidance, training)
+        
+        # 原有的策略梯度方法
         discrete_action = self.sample_action(observation)
         
         # 转换为连续动作空间（如果需要）
@@ -348,6 +396,82 @@ class RoleAgent(ABC):
             )
         
         return continuous_action
+
+    def _select_action_llm_actor(self, observation: np.ndarray,
+                                 holy_code_guidance: Optional[Dict[str, Any]],
+                                 training: bool) -> np.ndarray:
+        """使用LLM-Actor系统选择动作"""
+        try:
+            # 优先使用上层注入的全局16维状态；否则回退到局部观测填充
+            if self._global_state_vector is not None and len(self._global_state_vector) == 16:
+                full_state = self._global_state_vector
+            else:
+                if len(observation) < 16:
+                    full_state = np.zeros(16)
+                    full_state[:len(observation)] = observation
+                else:
+                    full_state = observation[:16]
+
+            # 如有外部价值网络，采用“候选生成 + 价值评估 + 选择”的架构
+            if self.action_value_fn is not None and hasattr(self.llm_actor_system, 'generator') and hasattr(self.llm_actor_system, 'parser'):
+                # 1) 生成候选
+                candidates, tokens_used = self.llm_actor_system.generator.generate_candidates(
+                    role=self.role,
+                    system_state=full_state,
+                    history=[],
+                    prompt_version=0
+                )
+                if not candidates:
+                    # 若无候选，使用默认动作
+                    action_vec = np.zeros(self.action_dim)
+                    self._last_llm_result = None
+                    self._last_llm_tokens = tokens_used
+                    self._last_llm_was_rejected = True
+                    return action_vec
+                
+                # 2) 解析并用价值网络评分
+                best_idx = 0
+                best_score = -1e9
+                best_vec = None
+                for idx, text in enumerate(candidates):
+                    vec = self.llm_actor_system.parser.parse(text, self.role)
+                    score = self.action_value_fn(full_state, vec, self.role)
+                    if score > best_score:
+                        best_score = score
+                        best_idx = idx
+                        best_vec = vec
+                
+                # 3) 记录统计并返回
+                self._last_llm_result = None  # 未使用内部selector
+                self._last_llm_tokens = tokens_used
+                self._last_llm_was_rejected = False
+                return best_vec if best_vec is not None else np.zeros(self.action_dim)
+            
+            # 默认：调用LLM-Actor系统（内部selector）获取决策
+            result = self.llm_actor_system.get_action(
+                role=self.role,
+                state=full_state,
+                deterministic=not training,
+                max_retries=3
+            )
+
+            # 记录LLM决策信息
+            self._last_llm_result = result
+            self._last_llm_tokens = result.tokens_used
+            self._last_llm_was_rejected = result.was_rejected
+
+            # 返回解析后的动作向量
+            return result.action_vector
+
+        except Exception as e:
+            logger.warning(f"{self.role} LLM-Actor failed: {e}, falling back to policy gradient")
+            # 失败时直接使用策略梯度（避免递归）
+            self._llm_actor_enabled = False  # 临时禁用避免递归
+            try:
+                result = self.select_action(observation, holy_code_guidance, training)
+            finally:
+                self._llm_actor_enabled = True  # 恢复
+            return result
     
     @abstractmethod
     def _apply_holy_code_recommendations(self, action: np.ndarray, 
@@ -356,8 +480,13 @@ class RoleAgent(ABC):
         pass
     
     def add_experience(self, state: np.ndarray, action: np.ndarray,
-                      reward: float, next_state: np.ndarray, done: bool):
-        """添加经验到历史"""
+                      reward: float, next_state: np.ndarray, done: bool,
+                      llm_result: Optional[Any] = None):
+        """添加经验到历史
+        
+        Args:
+            llm_result: CandidateSelectionResult对象（如果使用LLM-Actor）
+        """
         experience = {
             'role': self.role,
             'state': state,
@@ -367,11 +496,57 @@ class RoleAgent(ABC):
             'done': done
         }
         
+        # 如果有LLM决策结果，添加额外信息
+        if llm_result:
+            experience['llm_candidates'] = llm_result.candidates
+            experience['llm_selected_action'] = llm_result.selected_action
+            experience['llm_tokens_used'] = llm_result.tokens_used
+            experience['llm_was_rejected'] = llm_result.was_rejected
+            experience['llm_log_prob'] = llm_result.log_prob
+            
+            # 更新统计
+            self._total_llm_tokens += llm_result.tokens_used
+            self._llm_call_count += 1
+        
         self.action_history.append(action)
         self.state_history.append(state)
         self.reward_history.append(reward)
         
         return experience
+    
+    def enable_llm_actor(self, llm_actor_system):
+        """启用LLM-Actor决策系统
+        
+        Args:
+            llm_actor_system: LLMActorDecisionSystem实例
+        """
+        self.llm_actor_system = llm_actor_system
+        self._llm_actor_enabled = True
+        logger.info(f"{self.role} agent enabled LLM-Actor decision system")
+    
+    def disable_llm_actor(self):
+        """禁用LLM-Actor，回退到策略梯度"""
+        self._llm_actor_enabled = False
+        logger.info(f"{self.role} agent disabled LLM-Actor, using policy gradient")
+    
+    def get_llm_statistics(self) -> Dict[str, Any]:
+        """获取LLM使用统计"""
+        if self._llm_call_count == 0:
+            return {
+                'llm_enabled': self._llm_actor_enabled,
+                'total_calls': 0,
+                'total_tokens': 0,
+                'avg_tokens_per_call': 0.0
+            }
+        
+        return {
+            'llm_enabled': self._llm_actor_enabled,
+            'total_calls': self._llm_call_count,
+            'total_tokens': self._total_llm_tokens,
+            'avg_tokens_per_call': self._total_llm_tokens / self._llm_call_count,
+            'last_tokens': self._last_llm_tokens,
+            'last_was_rejected': self._last_llm_was_rejected
+        }
 
 class DoctorAgent(RoleAgent):
     """医生智能体 - 关注医疗质量和患者安全"""
@@ -646,6 +821,42 @@ class RoleManager:
         summary = {}
         for role, agent in self.agents.items():
             summary[role] = agent.get_performance_metrics()
+        return summary
+    
+    def enable_llm_actor_for_all(self, llm_actor_system):
+        """为所有智能体启用LLM-Actor系统
+        
+        Args:
+            llm_actor_system: LLMActorDecisionSystem实例
+        """
+        for agent in self.agents.values():
+            agent.enable_llm_actor(llm_actor_system)
+        logger.info(f"LLM-Actor enabled for all {len(self.agents)} agents")
+    
+    def disable_llm_actor_for_all(self):
+        """为所有智能体禁用LLM-Actor系统"""
+        for agent in self.agents.values():
+            agent.disable_llm_actor()
+        logger.info(f"LLM-Actor disabled for all {len(self.agents)} agents")
+    
+    def get_llm_statistics_summary(self) -> Dict[str, Dict[str, Any]]:
+        """获取所有智能体的LLM使用统计摘要"""
+        summary = {}
+        total_tokens = 0
+        total_calls = 0
+        
+        for role, agent in self.agents.items():
+            stats = agent.get_llm_statistics()
+            summary[role] = stats
+            total_tokens += stats.get('total_tokens', 0)
+            total_calls += stats.get('total_calls', 0)
+        
+        summary['_aggregate'] = {
+            'total_tokens_all_agents': total_tokens,
+            'total_calls_all_agents': total_calls,
+            'avg_tokens_per_call': total_tokens / total_calls if total_calls > 0 else 0.0
+        }
+        
         return summary
 
 def create_default_agent_system() -> RoleManager:

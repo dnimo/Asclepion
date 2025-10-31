@@ -29,14 +29,17 @@ logger = logging.getLogger(__name__)
 # 检查核心算法模块
 try:
     from src.hospital_governance.simulation.simulator import KallipolisSimulator, SimulationConfig
-    # 移除ScenarioRunner导入，直接使用Simulator内置功能
+    from src.hospital_governance.core.state_space import SystemState, StateSpaceDefinition
+    from src.hospital_governance.holy_code.holy_code_manager import HolyCodeManager, HolyCodeConfig
     HAS_CORE_ALGORITHMS = True
     logger.info("✅ 医院治理系统核心模块导入成功")
-    logger.info("🎯 支持: MADDPG + LLM + 分布式控制 + 数学策略 + 模板")
 except ImportError as e:
     logger.warning(f"⚠️ 核心算法模块导入失败: {e}")
     logger.info("🔄 将使用模拟数据运行")
     HAS_CORE_ALGORITHMS = False
+    SystemState = None
+    StateSpaceDefinition = None
+    HolyCodeManager = None
 
 class HospitalSimulationServer:
     """医院仿真WebSocket服务器
@@ -59,39 +62,107 @@ class HospitalSimulationServer:
         self.current_step = 0
         self.start_time = None
         
-        # 仿真器（集成完整的多层决策架构）
+        # 仿真器实例
         self.simulator = None
         self.simulation_task = None  # 异步仿真任务
         
-        # 16维系统状态指标（与state_space.py完全一致）
-        self.performance_metrics = {
-            # 物理资源状态 (x₁-x₄)
-            'bed_occupancy_rate': 0.7,                    # 病床占用率
-            'medical_equipment_utilization': 0.8,        # 医疗设备利用率
-            'staff_utilization_rate': 0.6,               # 人员利用率
-            'medication_inventory_level': 0.9,           # 药品库存水平
-            
-            # 财务状态 (x₅-x₈)
-            'cash_reserve_ratio': 0.8,                   # 现金储备率
-            'operating_margin': 0.1,                     # 运营利润率
-            'debt_to_asset_ratio': 0.3,                  # 资产负债率
-            'cost_efficiency_index': 0.75,               # 成本效率指数
-            
-            # 服务质量状态 (x₉-x₁₂)
-            'patient_satisfaction_index': 0.85,          # 患者满意度指数
-            'treatment_success_rate': 0.9,               # 治疗成功率
-            'average_wait_time': 0.2,                    # 平均等待时间
-            'medical_safety_index': 0.95,                # 医疗安全指数
-            
-            # 教育伦理状态 (x₁₃-x₁₆)
-            'ethical_compliance_score': 0.8,             # 伦理合规得分
-            'resource_allocation_fairness': 0.85,        # 资源分配公平性
-            'intern_learning_efficiency': 0.7,           # 实习生学习效率
-            'knowledge_transfer_rate': 0.8               # 知识传递率
-        }
+        # 从core模块初始化系统状态（使用SystemState定义）
+        self.performance_metrics = self._initialize_state_from_core()
         
-        # 基础规则系统（用于fallback）
-        self.basic_rules = {
+        # 从holy_code模块加载规则（使用yaml配置）
+        self.basic_rules = self._load_rules_from_holy_code()
+        
+        logger.info("🏥 WebSocket服务器初始化完成")
+
+    def _initialize_state_from_core(self) -> Dict[str, float]:
+        """从core模块初始化系统状态"""
+        if HAS_CORE_ALGORITHMS and SystemState:
+            # 创建默认SystemState实例
+            default_state = SystemState(
+                medical_resource_utilization=0.7,
+                patient_waiting_time=0.3,
+                financial_indicator=0.65,
+                ethical_compliance=0.8,
+                education_training_quality=0.75,
+                intern_satisfaction=0.7,
+                professional_development=0.6,
+                mentorship_effectiveness=0.8,
+                patient_satisfaction=0.85,
+                service_accessibility=0.8,
+                care_quality_index=0.85,
+                safety_incident_rate=0.05,
+                operational_efficiency=0.75,
+                staff_workload_balance=0.7,
+                crisis_response_capability=0.8,
+                regulatory_compliance_score=0.85
+            )
+
+            # 转换为字典（使用core模块定义的字段名）
+            state_dict = {
+                'medical_resource_utilization': default_state.medical_resource_utilization,
+                'patient_waiting_time': default_state.patient_waiting_time,
+                'financial_indicator': default_state.financial_indicator,
+                'ethical_compliance': default_state.ethical_compliance,
+                'education_training_quality': default_state.education_training_quality,
+                'intern_satisfaction': default_state.intern_satisfaction,
+                'professional_development': default_state.professional_development,
+                'mentorship_effectiveness': default_state.mentorship_effectiveness,
+                'patient_satisfaction': default_state.patient_satisfaction,
+                'service_accessibility': default_state.service_accessibility,
+                'care_quality_index': default_state.care_quality_index,
+                'safety_incident_rate': default_state.safety_incident_rate,
+                'operational_efficiency': default_state.operational_efficiency,
+                'staff_workload_balance': default_state.staff_workload_balance,
+                'crisis_response_capability': default_state.crisis_response_capability,
+                'regulatory_compliance_score': default_state.regulatory_compliance_score
+            }
+
+            logger.info("✅ 从core模块初始化了16维系统状态")
+            return state_dict
+        else:
+            # 降级模式：使用简化状态
+            logger.warning("⚠️ core模块不可用，使用降级状态")
+            return {
+                'medical_quality': 0.8,
+                'financial_health': 0.7,
+                'patient_satisfaction': 0.75,
+                'system_stability': 0.8
+            }
+
+    def _load_rules_from_holy_code(self) -> Dict[str, Any]:
+        """从holy_code模块加载规则配置"""
+        if HAS_CORE_ALGORITHMS and HolyCodeManager:
+            try:
+                # 创建HolyCodeManager实例加载规则
+                holy_config = HolyCodeConfig(
+                    rule_config_path='config/holy_code_rules.yaml'
+                )
+                temp_manager = HolyCodeManager(holy_config)
+
+                # 从rule_engine获取规则
+                if hasattr(temp_manager, 'rule_engine') and hasattr(temp_manager.rule_engine, 'rules'):
+                    rules_dict = {}
+                    for rule_id, rule_obj in temp_manager.rule_engine.rules.items():
+                        rules_dict[str(rule_id)] = {
+                            'name': str(rule_obj.name) if hasattr(rule_obj, 'name') else str(rule_id),
+                            'description': str(rule_obj.description) if hasattr(rule_obj, 'description') else '',
+                            'activated': False,
+                            'severity': 0.0,
+                            'priority': int(rule_obj.priority.value) if hasattr(rule_obj, 'priority') and hasattr(rule_obj.priority, 'value') else 3,
+                            'context': rule_obj.context if hasattr(rule_obj, 'context') else ['general']
+                        }
+
+                    logger.info(f"✅ 从holy_code配置加载了 {len(rules_dict)} 条规则")
+                    return rules_dict
+                else:
+                    logger.warning("⚠️ 无法从holy_code获取规则")
+
+            except Exception as e:
+                logger.warning(f"⚠️ 加载holy_code规则失败: {e}")
+
+        # 降级模式：返回基本规则
+        logger.warning("⚠️ holy_code模块不可用，使用降级规则")
+        return {
             'patient_safety_protocol': {
                 'name': '患者安全协议',
                 'description': '确保患者安全的基本协议',
@@ -103,28 +174,9 @@ class HospitalSimulationServer:
                 'description': '优化医疗资源分配',
                 'activated': False,
                 'severity': 0.0
-            },
-            'emergency_response_protocol': {
-                'name': '紧急响应协议',
-                'description': '紧急情况下的响应机制',
-                'activated': False,
-                'severity': 0.0
-            },
-            'quality_control_standard': {
-                'name': '质量控制标准',
-                'description': '医疗质量控制标准',
-                'activated': False,
-                'severity': 0.0
-            },
-            'financial_oversight_rule': {
-                'name': '财务监督规则',
-                'description': '财务运营监督规则',
-                'activated': False,
-                'severity': 0.0
             }
         }
-        
-        logger.info("🏥 WebSocket服务器初始化完成")
+
 
     async def register_client(self, websocket, path=None):
         """注册新客户端"""
@@ -134,11 +186,11 @@ class HospitalSimulationServer:
         # 发送初始状态
         await self.send_to_client(websocket, {
             'type': 'welcome',
-            'message': '🏥 欢迎连接到Kallipolis医疗共和国治理系统',
+            'message': '🏥 Welcome to Kallipolis Medical Republic Governance System',
             'server_info': {
                 'system_name': 'Kallipolis Medical Republic',
-                'version': '2.0.0 (重构版)',
-                'architecture': 'WebSocket推送/订阅 + KallipolisSimulator仿真',
+                'version': '2.0.0',
+                'architecture': 'WebSocket Push/Subscribe + KallipolisSimulator Simulation',
                 'integration_status': 'production' if HAS_CORE_ALGORITHMS else 'simulation'
             },
             'timestamp': datetime.now().isoformat()
@@ -228,32 +280,8 @@ class HospitalSimulationServer:
         self.simulator = None
         self.simulation_task = None
         
-        # 重置性能指标（与state_space.py完全一致）
-        self.performance_metrics.update({
-            # 物理资源状态 (x₁-x₄)
-            'bed_occupancy_rate': 0.7,                    # 病床占用率
-            'medical_equipment_utilization': 0.8,        # 医疗设备利用率
-            'staff_utilization_rate': 0.6,               # 人员利用率
-            'medication_inventory_level': 0.9,           # 药品库存水平
-            
-            # 财务状态 (x₅-x₈)
-            'cash_reserve_ratio': 0.8,                   # 现金储备率
-            'operating_margin': 0.1,                     # 运营利润率
-            'debt_to_asset_ratio': 0.3,                  # 资产负债率
-            'cost_efficiency_index': 0.75,               # 成本效率指数
-            
-            # 服务质量状态 (x₉-x₁₂)
-            'patient_satisfaction_index': 0.85,          # 患者满意度指数
-            'treatment_success_rate': 0.9,               # 治疗成功率
-            'average_wait_time': 0.2,                    # 平均等待时间
-            'medical_safety_index': 0.95,                # 医疗安全指数
-            
-            # 教育伦理状态 (x₁₃-x₁₆)
-            'ethical_compliance_score': 0.8,             # 伦理合规得分
-            'resource_allocation_fairness': 0.85,        # 资源分配公平性
-            'intern_learning_efficiency': 0.7,           # 实习生学习效率
-            'knowledge_transfer_rate': 0.8               # 知识传递率
-        })
+        # 重置性能指标（从core模块重新初始化）
+        self.performance_metrics = self._initialize_state_from_core()
         
         logger.info("🔄 仿真已重置")
         
@@ -292,7 +320,7 @@ class HospitalSimulationServer:
                 'agents_count': agent_count,
                 'performance_metrics': self.performance_metrics,
                 'integration_status': 'production' if HAS_CORE_ALGORITHMS else 'simulation',
-                'architecture': 'Separated WebSocket Server + KallipolisSimulator',
+                'architecture': 'WebSocket Server + KallipolisSimulator (Core State + Holy Code Rules)',
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -352,7 +380,6 @@ class HospitalSimulationServer:
     async def _start_real_simulation(self):
         """启动真实仿真循环"""
         logger.info("🔄 启动真实仿真循环...")
-        logger.info("🏗️ 多层决策架构: MADDPG → LLM → 控制器 → 数学策略 → 模板")
         
         # 创建仿真器实例
         config = SimulationConfig(
@@ -588,7 +615,7 @@ class HospitalSimulationServer:
             await self._start_mock_simulation()
     
     async def on_simulation_data(self, step_data: Dict[str, Any]):
-        """处理来自仿真器的数据推送（多层决策架构）"""
+        """处理来自仿真器的数据推送"""
         try:
             # 更新服务器状态
             self.current_step = step_data.get('step', self.current_step)
@@ -601,45 +628,27 @@ class HospitalSimulationServer:
                 'timestamp': datetime.now().isoformat()
             })
             
-            # 推送系统状态（16维）
+            # 推送系统状态（16维，保持与core命名一致）
             if 'system_state' in step_data:
                 system_state = step_data['system_state']
+                state_payload = None
                 if isinstance(system_state, dict):
-                    # 映射仿真器状态到16维状态空间
-                    state_mapping = {
-                        # 物理资源状态 (x₁-x₄)
-                        'bed_occupancy_rate': system_state.get('medical_resource_utilization', 0.7),
-                        'medical_equipment_utilization': system_state.get('operational_efficiency', 0.8),
-                        'staff_utilization_rate': system_state.get('staff_workload_balance', 0.6),
-                        'medication_inventory_level': system_state.get('crisis_response_capability', 0.9),
-                        
-                        # 财务状态 (x₅-x₈)
-                        'cash_reserve_ratio': system_state.get('financial_indicator', 0.8),
-                        'operating_margin': system_state.get('financial_indicator', 0.1),
-                        'debt_to_asset_ratio': 0.3,  # 默认值，如果仿真器没有提供
-                        'cost_efficiency_index': system_state.get('operational_efficiency', 0.75),
-                        
-                        # 服务质量状态 (x₉-x₁₂)
-                        'patient_satisfaction_index': system_state.get('patient_satisfaction', 0.85),
-                        'treatment_success_rate': system_state.get('care_quality_index', 0.9),
-                        'average_wait_time': system_state.get('patient_waiting_time', 0.2),
-                        'medical_safety_index': system_state.get('safety_incident_rate', 0.95),
-                        
-                        # 教育伦理状态 (x₁₃-x₁₆)
-                        'ethical_compliance_score': system_state.get('ethical_compliance', 0.8),
-                        'resource_allocation_fairness': system_state.get('regulatory_compliance_score', 0.85),
-                        'intern_learning_efficiency': system_state.get('education_training_quality', 0.7),
-                        'knowledge_transfer_rate': system_state.get('professional_development', 0.8)
-                    }
-                    
-                    # 更新性能指标
-                    for metric, value in state_mapping.items():
-                        if metric in self.performance_metrics:
-                            self.performance_metrics[metric] = float(value)
+                    # 直接透传core定义的字段名
+                    state_payload = {}
+                    for k, v in system_state.items():
+                        try:
+                            state_payload[k] = float(v)
+                        except Exception:
+                            # 忽略非数值字段
+                            continue
+                    # 更新性能指标（仅更新已有键）
+                    for metric in list(self.performance_metrics.keys()):
+                        if metric in state_payload:
+                            self.performance_metrics[metric] = state_payload[metric]
                 
                 await self.broadcast({
                     'type': 'system_state',
-                    'state': state_mapping,
+                    'state': state_payload if isinstance(system_state, dict) else system_state,
                     'timestamp': datetime.now().isoformat()
                 })
             
@@ -932,7 +941,7 @@ class HospitalSimulationServer:
             ping_timeout=10
         ):
             logger.info("✅ WebSocket服务器启动成功")
-            logger.info("🎯 重构后的架构:")
+            logger.info("🎯 服务架构:")
             logger.info("   📡 WebSocket服务器: 数据推送/订阅")
             logger.info("   🧠 KallipolisSimulator: 仿真逻辑主体")
             logger.info("   📊 数据流: Simulator -> Callback -> WebSocket -> Frontend")
@@ -952,7 +961,7 @@ async def main():
         logger.error(f"❌ 服务器错误: {e}")
 
 if __name__ == "__main__":
-    print("🏥 医院治理系统 - WebSocket实时监控服务器 (重构版)")
+    print("🏥 医院治理系统 - WebSocket实时监控服务器")
     print("=" * 70)
     print("📡 架构: 分离式 WebSocket推送/订阅 + KallipolisSimulator仿真")
     print("🌐 前端界面: http://localhost:8080/frontend/websocket_demo.html")
